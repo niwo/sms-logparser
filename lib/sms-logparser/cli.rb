@@ -13,9 +13,9 @@ module SmsLogparser
     class_option :mysql_user, :default => 'root'
     class_option :mysql_db, :default => 'Syslog'
 
-    desc "parse_db", "Check the database for pcache logs and send them to SMS"
+    desc "parse", "Check the database for pcache logs and send them to SMS"
     option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest'
-    option :debug, :type => :boolean, :default => false
+    option :simulate, :type => :boolean, :default => false
     def parse
       count = 0
       last_id = get_last_parse_id 
@@ -38,19 +38,25 @@ module SmsLogparser
           url += "#{data[:project_id]}/"
           url += "#{data[:traffic_type]}/"
           url += "#{data[:bytes]}"
-          if options[:debug]
-            puts result['ID']
+          if options[:simulate]
+            puts "Message ID: #{result['ID']}"
             puts "URL: #{url}"
             puts "Data: #{data}"
             puts "-----------------------"
           else
-            RestClient.get(url)
+            begin
+              RestClient.get(url)
+            rescue
+              say "Error: Can't send log to #{url}", :red
+              say "Aborting.", :red
+              exit 1
+            end
           end
           count += 1
         end
         last_id = result['ID']
       end
-      write_parse_result(last_id, count) unless options[:debug]
+      write_parse_result(last_id, count) unless options[:simulate]
       puts "Number of valid messages found: #{count}"
     end
 

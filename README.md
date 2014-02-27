@@ -18,9 +18,21 @@ Or install it yourself as:
 
 ## Setup
 
+Create the database table to track which logs have been parsed:
+
     $ sms-logparser create_parser_table
 
+Make a testrun:
+
+    $ sms-logparser parse --simulate
+
 ## Usage
+
+See available commamds:
+
+    $ sms-logparser help
+
+Parse logs from database and send them to the API
 
     $ sms-logparser parse
 
