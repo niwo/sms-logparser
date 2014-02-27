@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["nik.wolfgramm@gmail.com"]
   spec.description   = %q{SMS Logparser}
   spec.summary       = %q{SMS Logparser}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/niwo/sms-logparser"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
