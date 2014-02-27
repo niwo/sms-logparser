@@ -1,6 +1,6 @@
-# Sms::Logparser
+# SmsLogparser
 
-TODO: Write a gem description
+sms-logparser for DB-Logparser for Simplex Media Server
 
 ## Installation
 
@@ -16,9 +16,13 @@ Or install it yourself as:
 
     $ gem install sms-logparser
 
+## Setup
+
+    $ sms-logparser create_parser_table
+
 ## Usage
 
-TODO: Write usage instructions here
+    $ sms-logparser parse
 
 ## Contributing
 

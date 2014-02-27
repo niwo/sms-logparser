@@ -16,7 +16,7 @@ module SmsLogparser
     desc "parse_db", "Check the database for pcache logs and send them to SMS"
     option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest'
     option :debug, :type => :boolean, :default => false
-    def parse_db
+    def parse
       count = 0
       last_id = get_last_parse_id 
       begin 
