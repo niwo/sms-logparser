@@ -22,7 +22,7 @@ Create the database table to track which logs have been parsed:
 
     $ sms-logparser create_parser_table
 
-Make a testrun:
+Make a test run:
 
     $ sms-logparser parse --simulate
 
