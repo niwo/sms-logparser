@@ -36,6 +36,10 @@ Parse logs from database and send them to the API
 
     $ sms-logparser parse
 
+Show the last parser runs:
+
+    $ sms-logparser last_runs
+
 ## Contributing
 
 1. Fork it

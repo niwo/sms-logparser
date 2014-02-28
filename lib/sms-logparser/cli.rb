@@ -49,7 +49,7 @@ module SmsLogparser
             rescue
               say "Error: Can't send log to #{url}", :red
               say "Aborting.", :red
-              exit 1
+              break
             end
           end
           count += 1
@@ -60,13 +60,38 @@ module SmsLogparser
       puts "Number of valid messages found: #{count}"
     end
 
+    desc "last_runs", "List the last paser runs"
+    def last_runs
+      begin 
+        runs = client.query(
+          "SELECT * FROM SmsParserRuns ORDER BY ID ASC LIMIT 10"
+        )
+      rescue Mysql2::Error
+        say "parser_table not found please create it with 'create_parser_table'", :red
+        exit 1
+      end
+      if runs.size > 0
+        table = [%w(RunAt #Events LastEventID)]
+        runs.each do |run|
+          table << [
+            run['RunAt'],
+            run['EventsFound'],
+            run['LastEventID']
+          ]
+        end
+        print_table table
+      else
+        say "No parser runs found in the database."
+      end
+    end
+
     desc "create_parser_table", "Create the parser table to track the last logs parsed"
     def create_parser_table
       client.query(
         "CREATE TABLE IF NOT EXISTS\
           SmsParserRuns(\
             ID INT PRIMARY KEY AUTO_INCREMENT,\
-            LastRunAt datetime DEFAULT NULL,\
+            RunAt datetime DEFAULT NULL,\
             LastEventID INT DEFAULT NULL,\
             EventsFound INT DEFAULT 0,\
             INDEX `LastEventID_I1` (`LastEventID`)
@@ -87,7 +112,7 @@ module SmsLogparser
       end
 
       def write_parse_result(id, count)
-        client.query("INSERT INTO SmsParserRuns(LastRunAt, LastEventID, EventsFound)\
+        client.query("INSERT INTO SmsParserRuns(RunAt, LastEventID, EventsFound)\
           VALUES(\
             '#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}',\
             #{id},\
