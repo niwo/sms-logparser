@@ -13,6 +13,12 @@ module SmsLogparser
     class_option :mysql_user, :default => 'root'
     class_option :mysql_db, :default => 'Syslog'
 
+    desc "version", "print cloudstack-cli version number"
+    def version
+      say "sms-logparser version #{SmsLogparser::VERSION}"
+    end
+    map %w(-v --version) => :version
+
     desc "parse", "Check the database for pcache logs and send them to SMS"
     option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest'
     option :simulate, :type => :boolean, :default => false
