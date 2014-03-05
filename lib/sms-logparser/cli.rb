@@ -23,6 +23,7 @@ module SmsLogparser
     option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest'
     option :simulate, :type => :boolean, :default => false
     def parse
+      start_time = Time.now
       count = 0
       last_id = get_last_parse_id 
       begin 
@@ -63,7 +64,9 @@ module SmsLogparser
         last_id = result['ID']
       end
       write_parse_result(last_id, count) unless options[:simulate]
-      puts "Number of valid messages found: #{count}"
+      puts "Started: #{start_time.strftime('%d.%d.%Y %T')}"
+      puts "Runtime: #{(Time.now - start_time).round(2)}s"
+      puts "Matches: #{count}"
     end
 
     desc "last_runs", "List the last paser runs"
