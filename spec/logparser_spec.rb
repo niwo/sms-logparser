@@ -40,7 +40,7 @@ describe SmsLogparser do
     out.must_match /.*Matches: 0$/
   end
 
-  it "list parser runs" do
+  it "lists parser runs" do
     TestHelper.seed_db(1)
     parser = TestHelper.sms_logparser
     parser.options[:api_base_path] = 'http://devnull-as-a-service.com/dev/null/'
