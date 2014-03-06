@@ -41,13 +41,13 @@ module TestHelper
   end
 
   def self.insert_logs(host = "pcache", message = "", number_of_inserts = 1)
-    values = ''
+    values = []
     number_of_inserts.times do
-      values += "('#{host}', '#{message}'), "
+      values << "('#{host}', '#{message}')"
     end
     self.client.query(
       "INSERT INTO #{@@mysql_db}.SystemEvents(FromHost, Message)\
-        VALUES #{values.chomp(', ')}"
+        VALUES #{values.join(', ')}"
     )
   end
 
