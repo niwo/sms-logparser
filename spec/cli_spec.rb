@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe SmsLogparser do
+describe SmsLogparser::Cli do
   before do
     TestHelper.create_test_db
     TestHelper.create_sylog_db_table
@@ -12,7 +12,7 @@ describe SmsLogparser do
 
   it "can create the parser_runs database table" do
     out, err = capture_io do
-      TestHelper.sms_logparser.create_parser_table
+      TestHelper.sms_logparser.setup
     end
     out.must_match /OK/
   end
@@ -22,7 +22,7 @@ describe SmsLogparser do
     parser = TestHelper.sms_logparser
     parser.options[:api_base_path] = 'http://devnull-as-a-service.com/dev/null/'
     out, err = capture_io do
-      TestHelper.sms_logparser.create_parser_table
+      TestHelper.sms_logparser.setup
       parser.parse  
     end
     out.must_match /.*Matches: 10$/
@@ -33,7 +33,7 @@ describe SmsLogparser do
     parser = TestHelper.sms_logparser
     parser.options[:api_base_path] = 'http://devnull-as-a-service.com/dev/null/'
     out, err = capture_io do
-      TestHelper.sms_logparser.create_parser_table
+      TestHelper.sms_logparser.setup
       parser.parse
       parser.parse  
     end
@@ -45,7 +45,7 @@ describe SmsLogparser do
     parser = TestHelper.sms_logparser
     parser.options[:api_base_path] = 'http://devnull-as-a-service.com/dev/null/'
     out, err = capture_io do
-      TestHelper.sms_logparser.create_parser_table
+      TestHelper.sms_logparser.setup
       parser.parse
       parser.last_runs 
     end
