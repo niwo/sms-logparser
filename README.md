@@ -2,6 +2,8 @@
 
 sms-logparser - DB-Logparser for Simplex Media Server (SMS). Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) and pushes them to the SMS API.
 
+[![Gem Version](https://badge.fury.io/rb/sms-logparser.png)](http://badge.fury.io/rb/sms-logparser)
+
 ## Installation
 
 Add this line to your application's Gemfile:
