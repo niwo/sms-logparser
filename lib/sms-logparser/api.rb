@@ -6,20 +6,22 @@ module SmsLogparser
     end
 
     def send(data)
-      url = "#{@options[:api_base_path]}/"
-      url += "#{data[:customer_id]}/"
-      url += "#{data[:author_id]}/"
-      url += "#{data[:project_id]}/"
-      url += "#{data[:traffic_type]}/"
-      url += "#{data[:bytes]}"
+      base_url = "#{@options[:api_base_path]}/"
+      base_url += "#{data[:customer_id]}/"
+      base_url += "#{data[:author_id]}/"
+      base_url += "#{data[:project_id]}"
+      urls = ["#{base_url}/#{data[:traffic_type]}/#{data[:bytes]}"]
+      urls << "#{base_url}/#{data[:visitor_type]}/1" if data[:visitor_type]
       unless @options[:simulate]
-        begin
-          RestClient.get(url)
-        rescue
-          raise "Can't send log to #{url}"
+        urls.each do |url|
+          begin
+            RestClient.get(url)
+          rescue
+            raise "Can't send request to #{url}"
+          end
         end
       end
-      url
+      urls
     end
 
   end # class

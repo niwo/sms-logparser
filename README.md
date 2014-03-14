@@ -20,11 +20,11 @@ Or install it yourself as:
 
 Create the database table to track which logs have been parsed:
 
-    $ sms-logparser create_parser_table
+    $ sms-logparser setup
 
 Make a test run:
 
-    $ sms-logparser parse --simulate
+    $ sms-logparser parse --simulate --verbose
 
 ## Usage
 
@@ -39,6 +39,13 @@ Parse logs from database and send them to the API
 Show the last parser runs:
 
     $ sms-logparser last_runs
+
+# Development
+
+  - check out the git repo (git clone ...)
+  - implement your changes
+  - run the tests `rake test`
+  - bump the version number commit your changes and release a new version of the gem `rake release`
 
 ## Contributing
 

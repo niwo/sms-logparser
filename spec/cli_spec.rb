@@ -25,7 +25,7 @@ describe SmsLogparser::Cli do
       TestHelper.sms_logparser.setup
       parser.parse  
     end
-    out.must_match /.*Matches: 10$/
+    out.must_match /\s+10$/
   end
 
   it "skips over already parsed logs" do
@@ -37,7 +37,7 @@ describe SmsLogparser::Cli do
       parser.parse
       parser.parse  
     end
-    out.must_match /.*Matches: 0$/
+    out.must_match /\s+0$/
   end
 
   it "lists parser runs" do
