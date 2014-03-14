@@ -40,12 +40,12 @@ Show the last parser runs:
 
     $ sms-logparser last_runs
 
-# Development
+## Development
 
-  - check out the git repo (git clone ...)
+  - check out the git repo (`git clone <repo>`)
   - implement your changes
-  - run the tests `rake test`
-  - bump the version number commit your changes and release a new version of the gem `rake release`
+  - run the tests (`rake test`)
+  - bump the version number commit your changes and release a new version of the gem (`rake release`)
 
 ## Contributing
 
