@@ -1,22 +1,56 @@
 module SmsLogparser
   class Cli < Thor
+    require 'yaml'
 
-    class_option :mysql_host, :default => 'localhost', aliases: %w(-h)
-    class_option :mysql_user, :default => 'root', aliases: %w(-u)
-    class_option :mysql_password, aliases: %w(-p)
-    class_option :mysql_db, :default => 'Syslog', aliases: %w(-d)
+    STATUS = {
+      :ok => 0,
+      :api_error => 1
+    }
 
-    desc "version", "print cloudstack-cli version number"
+    class_option :config, 
+      :default => File.join(Dir.home, '.sms-logparser.yml'),
+      :aliases => %w(-c),
+      :desc => "Configuration file for default options"
+
+    class_option :mysql_host, 
+      :default => 'localhost',
+      :aliases => %w(-h),
+      :desc => "MySQL host"
+    
+    class_option :mysql_user,
+      :default => 'root',
+      :aliases => %w(-u),
+      :desc => "MySQL user"
+    
+    class_option :mysql_password,
+      :aliases => %w(-p),
+      :desc => "MySQL password"
+    
+    class_option :mysql_db,
+      :default => 'Syslog',
+      :aliases => %w(-d),
+      :desc => "MySQL database"
+
+    desc "version", "Print cloudstack-cli version number"
     def version
       say "sms-logparser version #{SmsLogparser::VERSION}"
     end
     map %w(-v --version) => :version
 
-    desc "parse", "Check the database for pcache logs and send them to SMS"
-    option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest', aliases: %w(-a)
-    option :api_key, aliases: %w(-k)
-    option :simulate, :type => :boolean, :default => false, aliases: %w(-s)
-    option :verbose, :type => :boolean, :default => false, aliases: %w(-v)
+    desc "parse", "Check the database for pcache logs and send them to the SMS-API"
+    option :api_base_path,
+      :default => 'http://dev.simplex.tv/creator/rest',
+      :aliases => %w(-a)
+    option :api_key,
+      :aliases => %w(-k)
+    option :simulate,
+      :type => :boolean,
+      :default => false,
+      :aliases => %w(-s)
+    option :verbose,
+      :type => :boolean,
+      :default => false,
+      :aliases => %w(-v)
     def parse
       start_time = Time.now
       count = 0
@@ -25,6 +59,7 @@ module SmsLogparser
         entries = mysql.get_entries
         api = Api.new(options)
         last_id = mysql.get_last_parse_id
+        status = STATUS[:ok]
         entries.each do |entry|
           if Parser.match(entry['Message'])
             data = Parser.extract_data_from_msg(entry['Message'])
@@ -33,6 +68,7 @@ module SmsLogparser
             rescue => e
               say "Error: #{e.message}", :red
               say "Aborting parser run...", :red
+              status = STATUS[:api_error]
               break
             end
             last_id = entry['ID']
@@ -40,7 +76,7 @@ module SmsLogparser
             verbose_parser_output(data, urls, entry) if options[:verbose]
           end
         end
-        mysql.write_parse_result(last_id, count) unless options[:simulate]
+        mysql.write_parse_result(last_id, count, status) unless options[:simulate]
         say "Started:\t", :cyan
         say start_time.strftime('%d.%d.%Y %T')
         say "Runtime:\t", :cyan
@@ -52,17 +88,24 @@ module SmsLogparser
       end
     end
 
-    desc "last_runs", "List the last paser runs"
-    def last_runs
+    desc "history", "List the last paser runs"
+    option :results,
+      :type => :numeric,
+      :default => 10,
+      :aliases => %w(-n),
+      :desc => "Number of results to display"
+    def history
+      puts options
       begin
-        runs = Mysql.new(options).last_runs
+        runs = Mysql.new(options).last_runs(options[:results])
         if runs.size > 0
-          table = [%w(RunAt #Events LastEventID)]
-          runs.each do |run|
+          table = [%w(RunAt #Events LastEventID Status)]
+          runs.to_a.reverse.each do |run|
             table << [
               run['RunAt'],
               run['EventsFound'],
-              run['LastEventID']
+              run['LastEventID'],
+              STATUS.index(run['Status']).upcase
             ]
           end
           print_table table
@@ -75,26 +118,46 @@ module SmsLogparser
     end
 
     desc "setup", "Create the parser table to track the last logs parsed"
+    option :force,
+      :type => :boolean,
+      :default => false,
+      :aliases => %w(-f),
+      :desc => "Drop an existing table if it exists"
     def setup
       begin
-        Mysql.new(options).create_parser_table
-        say "OK", :green
+        case Mysql.new(options).create_parser_table(options[:force])
+        when 0
+          say "OK, table created.", :green
+        when 1
+          say "Table already exists.", :yellow
+        end
       rescue => e
         say "Error: #{e.message}", :red
       end
     end
 
     no_commands do
+
       def verbose_parser_output(data, urls, entry)
         say "ID:\t", :cyan
         say entry['ID']
         say "URL:\t", :cyan
         say urls.join("\n\t")
         say "Data:\t", :cyan
-        say data.map{|k,v| "#{k}:\t#{v}"}.join("\n\t")
+        say data.map{|k,v| "#{k}:\t#{v}"}.join("\n\t") || "\n"
+        puts
         puts "-" * 100
         puts
       end
+
+      def options
+        original_options = super
+        filename = original_options[:config]
+        return original_options unless File.exists?(filename)
+        defaults = ::YAML::load_file(filename) || {}
+        defaults.merge(original_options)
+      end
+
     end
 
   end

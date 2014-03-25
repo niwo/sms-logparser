@@ -14,7 +14,7 @@ describe SmsLogparser::Cli do
     out, err = capture_io do
       TestHelper.sms_logparser.setup
     end
-    out.must_match /OK/
+    out.must_match /OK.*/
   end
 
   it "can parse a log database and find matches" do
@@ -40,14 +40,14 @@ describe SmsLogparser::Cli do
     out.must_match /\s+0$/
   end
 
-  it "lists parser runs" do
+  it "can show the parser history" do
     TestHelper.seed_db(1)
     parser = TestHelper.sms_logparser
     parser.options[:api_base_path] = 'http://devnull-as-a-service.com/dev/null/'
     out, err = capture_io do
       TestHelper.sms_logparser.setup
       parser.parse
-      parser.last_runs 
+      parser.history 
     end
     assert_equal(err, "")
   end

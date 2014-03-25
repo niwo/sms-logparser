@@ -14,27 +14,54 @@ module SmsLogparser
       )
     end
 
-    def last_runs
+    def last_runs(results = 10)
       begin 
         runs = client.query(
-          "SELECT * FROM SmsParserRuns ORDER BY ID ASC LIMIT 10"
+          "SELECT * FROM SmsParserRuns ORDER BY ID DESC LIMIT #{results}"
         )
       rescue Mysql2::Error => e
         raise e
       end
     end
 
-    def create_parser_table
+    def parser_table_exists?
       begin
         return client.query(
-          "CREATE TABLE IF NOT EXISTS\
-            SmsParserRuns(\
-              ID INT PRIMARY KEY AUTO_INCREMENT,\
-              RunAt datetime DEFAULT NULL,\
-              LastEventID INT DEFAULT NULL,\
-              EventsFound INT DEFAULT 0,\
-              INDEX `LastEventID_I1` (`LastEventID`)
-            )"
+          "SHOW TABLES LIKE 'SmsParserRuns'"
+        ).size > 0
+      rescue Mysql2::Error => e
+        raise e
+      end
+    end
+
+    def create_parser_table(force = false)
+      if force
+        drop_parser_table
+      elsif parser_table_exists?
+        return 1
+      end
+      begin
+        client.query(
+          "CREATE TABLE SmsParserRuns(\
+            ID SERIAL PRIMARY KEY AUTO_INCREMENT,\
+            RunAt datetime DEFAULT NULL,\
+            LastEventID BIGINT(20) UNSIGNED DEFAULT 0,\
+            EventsFound INT DEFAULT 0,\
+            Status TINYINT UNSIGNED DEFAULT 0,\
+            INDEX `LastEventID_I1` (`LastEventID`)
+          )"
+        )
+      rescue Mysql2::Error => e
+        raise e
+      end
+      return 0
+    end
+
+    def drop_parser_table
+      return nil unless parser_table_exists?
+      begin
+        return client.query(
+          "DROP TABLE SmsParserRuns"
         )
       rescue Mysql2::Error => e
         raise e
@@ -53,12 +80,13 @@ module SmsLogparser
       end
     end
 
-    def write_parse_result(id, count)
-      client.query("INSERT INTO SmsParserRuns(RunAt, LastEventID, EventsFound)\
+    def write_parse_result(id, count, status)
+      client.query("INSERT INTO SmsParserRuns(RunAt, LastEventID, EventsFound, Status)\
         VALUES(\
           '#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}',\
           #{id},\
-          #{count}
+          #{count},\
+          #{status}
         )"
       )
     end

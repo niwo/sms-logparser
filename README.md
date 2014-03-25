@@ -6,41 +6,55 @@ sms-logparser - DB-Logparser for Simplex Media Server (SMS). Reads access logs s
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Install the sms-logpaser gem:
 
-    gem 'sms-logparser'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install sms-logparser
+```bash
+$ gem install sms-logparser
+```
 
 ## Setup
 
 Create the database table to track which logs have been parsed:
 
-    $ sms-logparser setup
+```bash
+$ sms-logparser setup
+```
 
 Make a test run:
 
-    $ sms-logparser parse --simulate --verbose
+```bash
+$ sms-logparser parse --simulate --verbose
+```
+
+## Configuration file
+
+sms-logparser tries to read default options from a yaml file named '.sms-logparser.yml' placed in your home directory. Using the "-c/--config" flag you can adapt the path to the configuration file.
+
+An configuration for adapting the default MySQL password could look like this:
+
+```yaml
+:mysql_password: "my!secret"
+```
 
 ## Usage
 
 See available commands:
 
-    $ sms-logparser help
+```bash
+$ sms-logparser help
+```
 
 Parse logs from database and send them to the API
 
-    $ sms-logparser parse
+```bash
+$ sms-logparser parse
+```
 
 Show the last parser runs:
 
-    $ sms-logparser last_runs
+```bash
+$ sms-logparser history
+```
 
 ## Development
 
