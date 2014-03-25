@@ -1,6 +1,6 @@
-# SmsLogparser
+# SMS Logparser
 
-sms-logparser - DB-Logparser for Simplex Media Server (SMS). Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) and pushes them to the SMS API.
+sms-logparser - Logparser for Simplex Media Server (SMS). Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) and sends them to the SMS API.
 
 [![Gem Version](https://badge.fury.io/rb/sms-logparser.png)](http://badge.fury.io/rb/sms-logparser)
 
@@ -26,16 +26,6 @@ Make a test run:
 $ sms-logparser parse --simulate --verbose
 ```
 
-## Configuration file
-
-sms-logparser tries to read default options from a yaml file named '.sms-logparser.yml' placed in your home directory. Using the "-c/--config" flag you can adapt the path to the configuration file.
-
-An configuration for adapting the default MySQL password could look like this:
-
-```yaml
-:mysql_password: "my!secret"
-```
-
 ## Usage
 
 See available commands:
@@ -54,6 +44,16 @@ Show the last parser runs:
 
 ```bash
 $ sms-logparser history
+``
+
+## Configuration file
+
+sms-logparser tries to read default options from a yaml file named '.sms-logparser.yml' placed in your home directory. Using the "-c/--config" flag you can adapt the path to the configuration file.
+
+An configuration for adapting the default MySQL password could look like this:
+
+```yaml
+:mysql_password: "my!secret"
 ```
 
 ## Development
