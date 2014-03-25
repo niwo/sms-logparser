@@ -14,6 +14,7 @@ module SmsLogparser
 
     desc "parse", "Check the database for pcache logs and send them to SMS"
     option :api_base_path, :default => 'http://dev.simplex.tv/creator/rest', aliases: %w(-a)
+    option :api_key, aliases: %w(-k)
     option :simulate, :type => :boolean, :default => false, aliases: %w(-s)
     option :verbose, :type => :boolean, :default => false, aliases: %w(-v)
     def parse

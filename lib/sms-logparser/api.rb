@@ -15,7 +15,13 @@ module SmsLogparser
       unless @options[:simulate]
         urls.each do |url|
           begin
-            RestClient.get(url)
+            RestClient::Request.execute(
+              :method   => :post,
+              :url      => url,
+              :headers  => {
+                'X-simplex-api-key' => @options[:api_key]
+              }
+            )
           rescue
             raise "Can't send request to #{url}"
           end
