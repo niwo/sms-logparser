@@ -44,7 +44,7 @@ Show the last parser runs:
 
 ```bash
 $ sms-logparser history
-``
+```
 
 ## Configuration file
 
@@ -53,7 +53,7 @@ sms-logparser tries to read default options from a yaml file named '.sms-logpars
 An configuration for adapting the default MySQL password could look like this:
 
 ```yaml
-:mysql_password: "my!secret"
+:mysql_password: 'my!secret'
 ```
 
 ## Development
