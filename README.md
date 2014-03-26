@@ -50,7 +50,7 @@ $ sms-logparser history
 
 sms-logparser tries to read default options from a yaml file named '.sms-logparser.yml' placed in your home directory. Using the "-c/--config" flag you can adapt the path to the configuration file.
 
-An example configuration for adapting the default MySQL password and setting the api_key:
+An example configuration (~/.sms-logparser.yml) for adapting the default MySQL password and setting the api_key:
 
 ```yaml
 :mysql_password: 'my!secret'
