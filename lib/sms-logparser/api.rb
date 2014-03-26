@@ -6,12 +6,17 @@ module SmsLogparser
     end
 
     def send(data)
+      urls = []
       base_url = "#{@options[:api_base_path]}/"
       base_url += "#{data[:customer_id]}/"
       base_url += "#{data[:author_id]}/"
       base_url += "#{data[:project_id]}"
-      urls = ["#{base_url}/#{data[:traffic_type]}/#{data[:bytes]}"]
-      urls << "#{base_url}/#{data[:visitor_type]}/1" if data[:visitor_type]
+      unless data[:file] =~ /.*\.m3u8$/
+        urls = ["#{base_url}/#{data[:traffic_type]}/#{data[:bytes]}"]
+      end
+      if data[:visitor_type]
+        urls << "#{base_url}/#{data[:visitor_type]}/1"
+      end
       unless @options[:simulate]
         urls.each do |url|
           begin

@@ -61,7 +61,7 @@ module SmsLogparser
         last_id = mysql.get_last_parse_id
         status = STATUS[:ok]
         entries.each do |entry|
-          if Parser.match(entry['Message'])
+          if Parser.match?(entry['Message'])
             data = Parser.extract_data_from_msg(entry['Message'])
             begin
               urls = api.send(data)
@@ -73,15 +73,23 @@ module SmsLogparser
             end
             last_id = entry['ID']
             count += 1
-            verbose_parser_output(data, urls, entry) if options[:verbose]
+            if options[:verbose]
+              verbose_parser_output(data, urls, entry)
+            end
           end
         end
-        mysql.write_parse_result(last_id, count, status) unless options[:simulate]
+        unless options[:simulate]
+          mysql.write_parse_result(last_id, count, status)
+        end
         say "Started:\t", :cyan
         say start_time.strftime('%d.%d.%Y %T')
         say "Runtime:\t", :cyan
         say "#{(Time.now - start_time).round(2)}s"
-        options[:simulate] ? say("Events found:\t", :cyan) : say("Events sent:\t", :cyan)
+        if options[:simulate]
+          say("Events found:\t", :cyan)
+        else
+          say("Events sent:\t", :cyan)
+        end
         say count
       rescue => e
         say "Error: #{e.message}", :red
@@ -152,7 +160,7 @@ module SmsLogparser
 
       def options
         original_options = super
-        filename = original_options[:config]
+        filename = original_options[:config] || File.join(Dir.home, '.sms-logparser.yml')
         return original_options unless File.exists?(filename)
         defaults = ::YAML::load_file(filename) || {}
         defaults.merge(original_options)

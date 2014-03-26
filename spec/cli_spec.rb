@@ -49,6 +49,6 @@ describe SmsLogparser::Cli do
       parser.parse
       parser.history 
     end
-    assert_equal(err, "")
+    err.must_equal ""
   end
 end

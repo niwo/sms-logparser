@@ -4,41 +4,49 @@ describe SmsLogparser::Parser do
 
   %w(f4v flv mp4 mp3 ts m3u8).each do |extension|
     it "matches #{extension} files" do
-      SmsLogparser::Parser.match(
+      SmsLogparser::Parser.match?(
         "GET /content/2/719/54986/file.#{extension} HTTP/1.1\" 200 6741309 "
-      ).wont_be_nil
+      ).must_equal true
     end
   end
 
   %w(jpg js css m4a docx).each do |extension|
     it "does not matche #{extension} files" do
-      SmsLogparser::Parser.match(
+      SmsLogparser::Parser.match?(
         "GET /content/2/719/54986/file.#{extension} HTTP/1.1\" 200 6741309 "
-      ).must_be_nil
+      ).must_equal false
     end
   end
 
   %w(200 206).each do |status|
     it "does match status code #{status}" do
-      SmsLogparser::Parser.match(
+      SmsLogparser::Parser.match?(
         "GET /content/2/719/54986/file.mp4 HTTP/1.1\" #{status} 50000 "
-      ).wont_be_nil
+      ).must_equal true
     end
   end
 
   %w(404 500 304).each do |status|
     it "does not match status code #{status}" do
-      SmsLogparser::Parser.match(
+      SmsLogparser::Parser.match?(
         "GET /content/2/719/54986/file.mp4 HTTP/1.1\" #{status} 50000 "
-      ).must_be_nil
+      ).must_equal false
     end
   end
 
-  %w(contents public index CONTENT).each do |dir|
+  %w(contents public index assets).each do |dir|
     it "does not match directories other than /content" do
-      SmsLogparser::Parser.match(
+      SmsLogparser::Parser.match?(
         "GET /#{dir}/2/719/54986/file.mp4 HTTP/1.1\" 200 50000 "
-      ).must_be_nil
+      ).must_equal false
+    end
+  end
+
+  %w(detect.mp4 index.m3u8).each do |file|
+    it "does not match excluded files" do
+      SmsLogparser::Parser.match?(
+        "GET /content/2/719/54986/#{file} HTTP/1.1\" 200 128 "
+      ).must_equal false
     end
   end
 

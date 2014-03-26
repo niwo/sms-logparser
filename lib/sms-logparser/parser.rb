@@ -18,8 +18,14 @@ module SmsLogparser
       }
     end
 
-    def self.match(message)
-      message =~ /\/content\/.*\.(f4v|flv|mp4|mp3|ts|m3u8) .* (200|206)/
+    def self.match?(message)
+      match = message.match(
+        /\/content\/.+\/(\w+\.(f4v|flv|mp4|mp3|ts|m3u8)) .+ (200|206)/i
+      )
+      if match
+        return true unless match[1] =~ /detect.mp4|index.m3u8/i
+      end
+      false
     end
 
     # see https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent

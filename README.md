@@ -44,7 +44,7 @@ Show the last parser runs:
 
 ```bash
 $ sms-logparser history
-```
+``
 
 ## Configuration file
 
