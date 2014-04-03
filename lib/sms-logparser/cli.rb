@@ -28,7 +28,7 @@ module SmsLogparser
       aliases: %w(-d),
       desc: "MySQL database (default: Syslog)"
 
-    desc "version", "Print cloudstack-cli version number"
+    desc "version", "Print sms-logparser version number"
     def version
       say "sms-logparser v#{SmsLogparser::VERSION}"
     end
@@ -48,12 +48,15 @@ module SmsLogparser
       type: :boolean,
       default: false,
       aliases: %w(-v)
+    option :limit,
+      type: :numeric,
+      aliases: %w(-l)
     def parse
       start_time = Time.now
       count = 0
       begin
         mysql = Mysql.new(options)
-        entries = mysql.get_entries
+        entries = mysql.get_entries(limit: options[:limit])
         api = Api.new(options)
         last_id = mysql.get_last_parse_id
         status = STATUS[:ok]
@@ -109,7 +112,7 @@ module SmsLogparser
               run['RunAt'],
               run['EventsFound'],
               run['LastEventID'],
-              STATUS.index(run['Status']).upcase
+              STATUS.key(run['Status']).upcase
             ]
           end
           print_table table

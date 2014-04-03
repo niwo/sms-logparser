@@ -68,13 +68,14 @@ module SmsLogparser
       end
     end
 
-    def get_entries(last_id = get_last_parse_id)
-      begin 
-        return client.query(
-          "SELECT * FROM SystemEvents\
+    def get_entries(options={})
+      last_id = options[:last_id] || get_last_parse_id
+      begin
+        sql = "SELECT * FROM SystemEvents\
           WHERE `FromHost` like 'pcache%'\
           AND ID > #{last_id} ORDER BY ID ASC"
-        )
+        sql += "  LIMIT #{options[:limit].to_i}" if options[:limit]
+        return client.query(sql)
       rescue Mysql2::Error => e
         raise e
       end
