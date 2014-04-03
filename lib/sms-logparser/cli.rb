@@ -35,7 +35,7 @@ module SmsLogparser
     map %w(-v --version) => :version
 
     desc "parse", "Check the database for pcache logs and send them to the SMS-API"
-    option :api_base_path,
+    option :api_base_url,
       aliases: %w(-a),
       desc: "Base path of the SMS API (default: http://localhost:8080/)"
     option :api_key,
