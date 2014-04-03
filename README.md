@@ -53,8 +53,8 @@ sms-logparser tries to read default options from a yaml file named '.sms-logpars
 An example configuration (~/.sms-logparser.yml) for adapting the default MySQL password and setting the api_key:
 
 ```yaml
-:mysql_password: 'my!secret'
-:api_key:        'xqugl-hjh54-dr97-9kjdkjwi988d-123456'
+mysql_password: 'my!secret'
+api_key:        'xqugl-hjh54-dr97-9kjdkjwi988d-123456'
 ```
 
 ## Development
