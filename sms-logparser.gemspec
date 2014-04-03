@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = SmsLogparser::VERSION
   spec.authors       = ["niwo"]
   spec.email         = ["nik.wolfgramm@gmail.com"]
-  spec.description   = %q{SMS Logparser}
-  spec.summary       = %q{SMS Logparser}
+  spec.description   = %q{Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) and sends them to the SMS API.}
+  spec.summary       = %q{sms-logparser - Logparser for Simplex Media Server (SMS)}
   spec.homepage      = "https://github.com/swisstxt/sms-logparser"
   spec.license       = "MIT"
 
@@ -20,10 +20,10 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 1.9.3'
   
-  spec.add_development_dependency "bundler", "~> 1.3"
-  spec.add_development_dependency "rake"
+  spec.add_development_dependency 'bundler', '~> 1.3'
+  spec.add_development_dependency 'rake'
 
-  spec.add_dependency "thor"
-  spec.add_dependency "mysql2"
-  spec.add_dependency "rest_client"
+  spec.add_dependency 'thor', '~> 0.19.1'
+  spec.add_dependency 'faraday', '~> 0.9.0'
+  spec.add_dependency 'mysql2'
 end

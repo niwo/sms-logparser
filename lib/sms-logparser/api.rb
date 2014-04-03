@@ -5,34 +5,46 @@ module SmsLogparser
       @options = options
     end
 
+    def connection
+      @connection ||= new_connection
+    end
+
+    def new_connection
+      base_url = @options[:api_base_path] || 'http://localhost:8080'
+      conn = Faraday.new(url: base_url) do |faraday|
+        faraday.request :url_encoded
+        faraday.response :logger if @options[:debug]
+        faraday.adapter  Faraday.default_adapter
+      end
+      conn.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
+      if @options[:api_key]
+        conn.headers['X-simplex-api-key'] = @options[:api_key]
+      end
+      conn
+    end
+
     def send(data)
-      urls = []
-      base_url = "#{@options[:api_base_path]}/"
-      base_url += "#{data[:customer_id]}/"
-      base_url += "#{data[:author_id]}/"
-      base_url += "#{data[:project_id]}"
+      uris = []
+      base_uri = ["/#{data[:customer_id]}", data[:author_id], data[:project_id]].join('/')
       unless data[:file] =~ /.*\.m3u8$/
-        urls = ["#{base_url}/#{data[:traffic_type]}/#{data[:bytes]}"]
+        uris << [base_uri, data[:traffic_type], data[:bytes]].join('/')
       end
       if data[:visitor_type]
-        urls << "#{base_url}/#{data[:visitor_type]}/1"
+        uris << [base_uri, data[:visitor_type], 1].join('/')
       end
       unless @options[:simulate]
-        urls.each do |url|
+        uris.each do |uri|
           begin
-            RestClient::Request.execute(
-              :method   => :post,
-              :url      => url,
-              :headers  => {
-                'X-simplex-api-key' => @options[:api_key]
-              }
-            )
-          rescue
-            raise "Can't send request to #{url}"
+            response = connection.post(uri)
+          rescue => e
+            raise RuntimeError, "Can't send request to #{uri}. #{e.message}", caller
+          end
+          unless response.status == 200
+            raise RuntimeError, "Received response code (#{response.status}) from API.", caller
           end
         end
       end
-      urls
+      uris
     end
 
   end # class

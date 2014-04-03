@@ -8,49 +8,46 @@ module SmsLogparser
     }
 
     class_option :config, 
-      :default => File.join(Dir.home, '.sms-logparser.yml'),
-      :aliases => %w(-c),
-      :desc => "Configuration file for default options"
+      default: File.join(Dir.home, '.sms-logparser.yml'),
+      aliases: %w(-c),
+      desc: "Configuration file for default options"
 
     class_option :mysql_host, 
-      :default => 'localhost',
-      :aliases => %w(-h),
-      :desc => "MySQL host"
+      aliases: %w(-h),
+      desc: "MySQL host"
     
     class_option :mysql_user,
-      :default => 'root',
-      :aliases => %w(-u),
-      :desc => "MySQL user"
+      aliases: %w(-u),
+      desc: "MySQL user (default: root)"
     
     class_option :mysql_password,
-      :aliases => %w(-p),
-      :desc => "MySQL password"
+      aliases: %w(-p),
+      desc: "MySQL password"
     
     class_option :mysql_db,
-      :default => 'Syslog',
-      :aliases => %w(-d),
-      :desc => "MySQL database"
+      aliases: %w(-d),
+      desc: "MySQL database (default: Syslog)"
 
     desc "version", "Print cloudstack-cli version number"
     def version
-      say "sms-logparser version #{SmsLogparser::VERSION}"
+      say "sms-logparser v#{SmsLogparser::VERSION}"
     end
     map %w(-v --version) => :version
 
     desc "parse", "Check the database for pcache logs and send them to the SMS-API"
     option :api_base_path,
-      :default => 'http://dev.simplex.tv/creator/rest',
-      :aliases => %w(-a)
+      aliases: %w(-a),
+      desc: "Base path of the SMS API (default: http://localhost:8080/)"
     option :api_key,
-      :aliases => %w(-k)
+      aliases: %w(-k)
     option :simulate,
-      :type => :boolean,
-      :default => false,
-      :aliases => %w(-s)
+      type: :boolean,
+      default: false,
+      aliases: %w(-s)
     option :verbose,
-      :type => :boolean,
-      :default => false,
-      :aliases => %w(-v)
+      type: :boolean,
+      default: false,
+      aliases: %w(-v)
     def parse
       start_time = Time.now
       count = 0
@@ -64,7 +61,7 @@ module SmsLogparser
           if Parser.match?(entry['Message'])
             data = Parser.extract_data_from_msg(entry['Message'])
             begin
-              urls = api.send(data)
+              uris = api.send(data)
             rescue => e
               say "Error: #{e.message}", :red
               say "Aborting parser run...", :red
@@ -74,7 +71,7 @@ module SmsLogparser
             last_id = entry['ID']
             count += 1
             if options[:verbose]
-              verbose_parser_output(data, urls, entry)
+              verbose_parser_output(data, uris, entry)
             end
           end
         end
@@ -98,12 +95,11 @@ module SmsLogparser
 
     desc "history", "List the last paser runs"
     option :results,
-      :type => :numeric,
-      :default => 10,
-      :aliases => %w(-n),
-      :desc => "Number of results to display"
+      type: :numeric,
+      default: 10,
+      aliases: %w(-n),
+      desc: "Number of results to display"
     def history
-      puts options
       begin
         runs = Mysql.new(options).last_runs(options[:results])
         if runs.size > 0
@@ -127,10 +123,10 @@ module SmsLogparser
 
     desc "setup", "Create the parser table to track the last logs parsed"
     option :force,
-      :type => :boolean,
-      :default => false,
-      :aliases => %w(-f),
-      :desc => "Drop an existing table if it exists"
+      type: :boolean,
+      default: false,
+      aliases: %w(-f),
+      desc: "Drop an existing table if it exists"
     def setup
       begin
         case Mysql.new(options).create_parser_table(options[:force])
@@ -145,12 +141,11 @@ module SmsLogparser
     end
 
     no_commands do
-
-      def verbose_parser_output(data, urls, entry)
+      def verbose_parser_output(data, uris, entry)
         say "ID:\t", :cyan
         say entry['ID']
-        say "URL:\t", :cyan
-        say urls.join("\n\t")
+        say "URI:\t", :cyan
+        say uris.join("\n\t")
         say "Data:\t", :cyan
         say data.map{|k,v| "#{k}:\t#{v}"}.join("\n\t") || "\n"
         puts
@@ -163,9 +158,8 @@ module SmsLogparser
         filename = original_options[:config] || File.join(Dir.home, '.sms-logparser.yml')
         return original_options unless File.exists?(filename)
         defaults = ::YAML::load_file(filename) || {}
-        defaults.merge(original_options)
+        Thor::CoreExt::HashWithIndifferentAccess.new(defaults.merge(original_options))
       end
-
     end
 
   end

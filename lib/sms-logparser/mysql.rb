@@ -7,10 +7,10 @@ module SmsLogparser
 
     def client
       @client ||= Mysql2::Client.new(
-        :host => @options[:mysql_host],
-        :username => @options[:mysql_user],
-        :password => @options[:mysql_password],
-        :database => @options[:mysql_db]
+        host: @options[:mysql_host],
+        username: @options[:mysql_user] || "root",
+        password: @options[:mysql_password],
+        database: @options[:mysql_db] || "Syslog"
       )
     end
 
