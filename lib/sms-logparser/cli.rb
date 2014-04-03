@@ -51,6 +51,9 @@ module SmsLogparser
     option :limit,
       type: :numeric,
       aliases: %w(-l)
+    option :debug,
+      type: :boolean,
+      default: false
     def parse
       start_time = Time.now
       count = 0
