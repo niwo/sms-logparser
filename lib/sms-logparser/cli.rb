@@ -2,10 +2,7 @@ module SmsLogparser
   class Cli < Thor
     require 'yaml'
 
-    STATUS = {
-      :ok => 0,
-      :api_error => 1
-    }
+    STATUS = {ok: 0, api_error: 1}
 
     class_option :config, 
       default: File.join(Dir.home, '.sms-logparser.yml'),
@@ -56,51 +53,37 @@ module SmsLogparser
       default: false
     def parse
       say "Starting the parser...", :green
-      start_time = Time.now
-      count = 0
-      begin
-        mysql = Mysql.new(options)
-        api = Api.new(options)
-        last_id = mysql.get_last_parse_id
-        status = STATUS[:ok]
-        begin
-          mysql.get_entries(last_id: last_id, limit: options[:limit]) do |entries|
-            entries.each do |entry| 
-              if data = Parser.extract_data_from_msg(entry['Message'])
-                uris = api.send(data)
-                last_id = entry['ID']
-                count += 1
-                if options[:verbose]
-                  verbose_parser_output(data, uris, entry)
-                end
-              end
-            end
+      mysql = Mysql.new(options)
+      state = {
+        last_event_id: mysql.get_last_parse_id, 
+        match_count: 0,
+        status: STATUS[:ok],
+        run_at: Time.now,
+        run_time: 0.0
+      }
+      api = Api.new(options)
+      mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
+        entries.each do |entry| 
+          if data = Parser.extract_data_from_msg(entry['Message'])
+            uris = api.send(data)
+            state[:last_event_id] = entry['ID']
+            state[:match_count] += 1
+            verbose_parser_output(data, uris, entry) if options[:verbose]
           end
-        rescue => e
-          say "Error: #{e.message}", :red
-          say "Aborting parser run...", :red
-          status = STATUS[:api_error]
-        ensure
-          mysql.write_parse_result(
-            last_event_id: last_id, 
-            match_count: count,
-            status: status,
-            run_at: start_time,
-            run_time: (Time.now - start_time).round(2)
-          ) unless options[:simulate]
         end
-        say "Started:\t", :cyan
-        say start_time.strftime('%d.%d.%Y %T')
-        say "Runtime:\t", :cyan
-        say "#{(Time.now - start_time).round(2)}s"
-        say "Status:\t\t", :cyan
-        say STATUS.key(status).upcase
-        action = options[:simulate] ? "found" : "sent"
-        say("Events #{action}:\t", :cyan)
-        say count
+      end
+    rescue => e
+      say "Error: #{e.message}", :red
+      say "Aborting parser run...", :red
+      state[:status] = STATUS[:api_error]
+    ensure
+      begin
+        state[:run_time] = (Time.now - state[:run_at]).round(2)
+        mysql.write_parse_result(state) unless options[:simulate]
+        print_parse_results(state)
       rescue => e
         say "Error: #{e.message}", :red
-        say e.backtrace; :yellow
+        say(e.backtrace.join("\n"), :yellow) if options[:debug]
       end
     end
 
@@ -111,26 +94,25 @@ module SmsLogparser
       aliases: %w(-n),
       desc: "Number of results to display"
     def history
-      begin
-        runs = Mysql.new(options).last_runs(options[:results])
-        if runs.size > 0
-          table = [%w(run_at run_time match_count last_event_id status)]
-          runs.to_a.reverse.each do |run|
-            table << [
-              run['run_at'],
-              "#{run['run_time']}s",
-              run['match_count'],
-              run['last_event_id'],
-              STATUS.key(run['status']).upcase
-            ]
-          end
-          print_table table
-        else
-          say "No parser runs found in the database."
+      runs = Mysql.new(options).last_runs(options[:results])
+      if runs && runs.size > 0
+        table = [%w(run_at count last_id status run_time)]
+        runs.to_a.reverse.each do |run|
+          table << [
+            run['run_at'].strftime('%d.%d.%Y %T'),
+            run['match_count'],
+            run['last_event_id'],
+            STATUS.key(run['status']).upcase,
+            "#{run['run_time']}s"
+          ]
         end
-      rescue => e
-        say "Error: #{e.message}", :red
+        print_table table
+      else
+        say "No parser runs found in the database."
       end
+    rescue => e
+      say "Error: #{e.message}", :red
+      exit 1
     end
 
     desc "setup", "Create the parser table to track the last logs parsed"
@@ -140,16 +122,15 @@ module SmsLogparser
       aliases: %w(-f),
       desc: "Drop an existing table if it exists"
     def setup
-      begin
-        case Mysql.new(options).create_parser_table(options[:force])
-        when 0
-          say "OK, table created.", :green
-        when 1
-          say "Table already exists.", :yellow
-        end
-      rescue => e
-        say "Error: #{e.message}", :red
+      case Mysql.new(options).create_parser_table(options[:force])
+      when 0
+        say "OK, table created.", :green
+      when 1
+        say "Table already exists.", :yellow
       end
+    rescue => e
+      say "Error: #{e.message}", :red
+      exit 1
     end
 
     no_commands do
@@ -163,6 +144,18 @@ module SmsLogparser
         puts
         puts "-" * 100
         puts
+      end
+
+      def print_parse_results(res)
+        say "Started:\t", :cyan
+        say res[:run_at].strftime('%d.%d.%Y %T')
+        say "Runtime:\t", :cyan
+        say "#{res[:run_time]}s"
+        say "Status:\t\t", :cyan
+        say STATUS.key(res[:status]).upcase
+        action = options[:simulate] ? "found" : "sent"
+        say("Events #{action}:\t", :cyan)
+        say res[:match_count]
       end
 
       def options

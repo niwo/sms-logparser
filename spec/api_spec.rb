@@ -5,7 +5,7 @@ describe SmsLogparser::Api do
   before do
     @api = SmsLogparser::Api.new(
       simulate: true,
-      api_base_path: "http://myapi.com/rest/"
+      api_base_url: "http://localhost/creator/rest/"
     )
   end
 

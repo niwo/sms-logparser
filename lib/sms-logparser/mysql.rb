@@ -19,7 +19,7 @@ module SmsLogparser
 
     def last_runs(results = 10)
       runs = client.query(
-        "SELECT * FROM sms_logparser_runs ORDER BY id DESC LIMIT #{results}"
+        "SELECT * FROM sms_logparser_runs ORDER BY id DESC LIMIT #{results || 10}"
       )
     end
 

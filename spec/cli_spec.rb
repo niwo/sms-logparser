@@ -4,6 +4,9 @@ describe SmsLogparser::Cli do
   before do
     TestHelper.create_test_db
     TestHelper.create_sylog_db_table
+    stub_request(:post, /.*locahost.*/).
+      with(headers: {'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
+      to_return(status: 200, body: "stubbed response", headers: {})
   end
 
   after do
@@ -11,8 +14,10 @@ describe SmsLogparser::Cli do
   end
 
   it "can create the parser_runs database table" do
+    parser = TestHelper.sms_logparser
+    parser.options[:force] = true
     out, err = capture_io do
-      TestHelper.sms_logparser.setup
+      parser.setup
     end
     out.must_match /OK.*/
   end
@@ -21,8 +26,9 @@ describe SmsLogparser::Cli do
     TestHelper.seed_db(10)
     parser = TestHelper.sms_logparser
     parser.options[:simulate] = true
+    #parser.options[:api_base_url] = "http://localhost/creator/rest/"
     out, err = capture_io do
-      TestHelper.sms_logparser.setup
+      parser.setup
       parser.parse  
     end
     out.must_match /\s+10$/
@@ -44,8 +50,10 @@ describe SmsLogparser::Cli do
     TestHelper.seed_db(1)
     parser = TestHelper.sms_logparser
     parser.options[:simulate] = true
+    parser.options[:force] = true
+
     out, err = capture_io do
-      TestHelper.sms_logparser.setup
+      parser.setup
       parser.parse
       parser.history 
     end
