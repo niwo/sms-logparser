@@ -36,21 +36,26 @@ module SmsLogparser
       aliases: %w(-a),
       desc: "Base path of the SMS API (default: http://localhost:8080/)"
     option :api_key,
-      aliases: %w(-k)
+      aliases: %w(-k),
+      desc: "SMS API Key"
     option :simulate,
       type: :boolean,
       default: false,
-      aliases: %w(-s)
+      aliases: %w(-s),
+      desc: "Dry run without submitting any data"
     option :verbose,
       type: :boolean,
       default: false,
-      aliases: %w(-v)
+      aliases: %w(-v),
+      desc: "Verbose output"
     option :limit,
       type: :numeric,
-      aliases: %w(-l)
+      aliases: %w(-l),
+      desc: "Limit the number of entries to query"
     option :debug,
       type: :boolean,
-      default: false
+      default: false,
+      desc: "Show debug output"
     def parse
       say "Starting the parser...", :green
       mysql = Mysql.new(options)
