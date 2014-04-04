@@ -3,6 +3,9 @@ module SmsLogparser
 
     def initialize(options)
       @options = options
+      @host_filter = options[:host_filter] || 'pcache%'
+      @query_limit = options[:query_limit] || 1000
+      @client = client
     end
 
     def client
@@ -15,23 +18,9 @@ module SmsLogparser
     end
 
     def last_runs(results = 10)
-      begin 
-        runs = client.query(
-          "SELECT * FROM SmsParserRuns ORDER BY ID DESC LIMIT #{results}"
-        )
-      rescue Mysql2::Error => e
-        raise e
-      end
-    end
-
-    def parser_table_exists?
-      begin
-        return client.query(
-          "SHOW TABLES LIKE 'SmsParserRuns'"
-        ).size > 0
-      rescue Mysql2::Error => e
-        raise e
-      end
+      runs = client.query(
+        "SELECT * FROM sms_logparser_runs ORDER BY id DESC LIMIT #{results}"
+      )
     end
 
     def create_parser_table(force = false)
@@ -40,69 +29,80 @@ module SmsLogparser
       elsif parser_table_exists?
         return 1
       end
-      begin
-        client.query(
-          "CREATE TABLE SmsParserRuns(\
-            ID SERIAL PRIMARY KEY AUTO_INCREMENT,\
-            RunAt datetime DEFAULT NULL,\
-            LastEventID BIGINT(20) UNSIGNED DEFAULT 0,\
-            EventsFound INT DEFAULT 0,\
-            Status TINYINT UNSIGNED DEFAULT 0,\
-            INDEX `LastEventID_I1` (`LastEventID`)
-          )"
-        )
-      rescue Mysql2::Error => e
-        raise e
-      end
+      client.query(
+        "CREATE TABLE sms_logparser_runs(\
+          id SERIAL PRIMARY KEY AUTO_INCREMENT,\
+          run_at datetime DEFAULT NULL,\
+          last_event_id BIGINT(20) UNSIGNED DEFAULT 0,\
+          match_count INT UNSIGNED DEFAULT 0,\
+          status TINYINT UNSIGNED DEFAULT 0,\
+          run_time DOUBLE(10,2) NOT NULL DEFAULT '0.00',\
+          INDEX `last_event_id_I1` (`last_event_id`)
+        )"
+      )
       return 0
     end
 
-    def drop_parser_table
-      return nil unless parser_table_exists?
-      begin
-        return client.query(
-          "DROP TABLE SmsParserRuns"
-        )
-      rescue Mysql2::Error => e
-        raise e
-      end
-    end
-
-    def get_entries(options={})
-      last_id = options[:last_id] || get_last_parse_id
-      begin
-        sql = "SELECT * FROM SystemEvents\
-          WHERE `FromHost` like 'pcache%'\
-          AND ID > #{last_id} ORDER BY ID ASC"
-        sql += "  LIMIT #{options[:limit].to_i}" if options[:limit]
-        return client.query(sql)
-      rescue Mysql2::Error => e
-        raise e
-      end
-    end
-
-    def write_parse_result(id, count, status)
-      client.query("INSERT INTO SmsParserRuns(RunAt, LastEventID, EventsFound, Status)\
+    def write_parse_result(options={})
+      client.query(
+        "INSERT INTO sms_logparser_runs(run_at, last_event_id, match_count, status, run_time)\
         VALUES(\
-          '#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}',\
-          #{id},\
-          #{count},\
-          #{status}
+          '#{options[:run_at].strftime("%Y-%m-%d %H:%M:%S")}',\
+          #{options[:last_event_id]},\
+          #{options[:match_count]},\
+          #{options[:status]},\
+          #{options[:run_time]}
         )"
       )
     end
 
-    def get_last_parse_id
-      id = 0
-      begin
-        last_parse = client.query(
-          "SELECT LastEventID FROM SmsParserRuns ORDER BY ID DESC LIMIT 1"
-        )
-        id = last_parse.first ? last_parse.first['LastEventID'] : 0
-      rescue Mysql2::Error => e
-        raise e
+    def get_entries(options={})
+      last_id = options[:last_id] || get_last_parse_id
+      if options[:limit]
+        max_id = last_id + options[:limit] + 1
+      else 
+        max_id = get_last_event_id
       end
-      id
+      while last_id < max_id
+        entries = select_entries(last_id)
+        last_id = entries.to_a[-1]['ID']
+        yield entries
+      end
+    end
+
+    def get_last_parse_id
+      last_parse = client.query(
+        "SELECT last_event_id FROM sms_logparser_runs ORDER BY id DESC LIMIT 1"
+      )
+      last_parse.first ? last_parse.first['last_event_id'] : 0
+    end
+
+    private
+
+    def select_entries(last_id)
+      sql = "SELECT * FROM SystemEvents\
+        WHERE `FromHost` like '#{@host_filter}'\
+        ORDER BY ID ASC\
+        LIMIT #{last_id},#{@query_limit};"
+      client.query(sql)
+    end
+
+    def get_last_event_id
+      last_event = client.query(
+        "SELECT ID FROM SystemEvents ORDER BY ID DESC LIMIT 1"
+      )
+      last_event.first ? last_event.first['ID'] : 0
+    end
+
+    def parser_table_exists?
+      client.query(
+        "SHOW TABLES LIKE 'sms_logparser_runs'"
+      ).size > 0
+    end
+
+    def drop_parser_table
+      return nil unless parser_table_exists?
+      client.query("DROP TABLE sms_logparser_runs")
     end
 
   end # class

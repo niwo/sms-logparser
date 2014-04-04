@@ -8,20 +8,18 @@ module SmsLogparser
     end
 
     def connection
-      @connection ||= new_connection
-    end
-
-    def new_connection
-      conn = Faraday.new(url: @base_url) do |faraday|
-        faraday.request :url_encoded
-        faraday.response :logger if @options[:debug]
-        faraday.adapter  Faraday.default_adapter
+      unless @connection
+        @connection = Faraday.new(url: @base_url) do |faraday|
+          faraday.request :url_encoded
+          faraday.response :logger if @options[:debug]
+          faraday.adapter :net_http_persistent
+        end
+        @connection.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
+        if @options[:api_key]
+          @connection.headers['X-simplex-api-key'] = @options[:api_key]
+        end
       end
-      conn.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
-      if @options[:api_key]
-        conn.headers['X-simplex-api-key'] = @options[:api_key]
-      end
-      conn
+      @connection
     end
 
     def send(data)

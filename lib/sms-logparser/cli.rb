@@ -55,47 +55,52 @@ module SmsLogparser
       type: :boolean,
       default: false
     def parse
+      say "Starting the parser...", :green
       start_time = Time.now
       count = 0
       begin
         mysql = Mysql.new(options)
-        entries = mysql.get_entries(limit: options[:limit])
         api = Api.new(options)
         last_id = mysql.get_last_parse_id
         status = STATUS[:ok]
-        entries.each do |entry|
-          if Parser.match?(entry['Message'])
-            data = Parser.extract_data_from_msg(entry['Message'])
-            begin
-              uris = api.send(data)
-            rescue => e
-              say "Error: #{e.message}", :red
-              say "Aborting parser run...", :red
-              status = STATUS[:api_error]
-              break
-            end
-            last_id = entry['ID']
-            count += 1
-            if options[:verbose]
-              verbose_parser_output(data, uris, entry)
+        begin
+          mysql.get_entries(last_id: last_id, limit: options[:limit]) do |entries|
+            entries.each do |entry| 
+              if data = Parser.extract_data_from_msg(entry['Message'])
+                uris = api.send(data)
+                last_id = entry['ID']
+                count += 1
+                if options[:verbose]
+                  verbose_parser_output(data, uris, entry)
+                end
+              end
             end
           end
-        end
-        unless options[:simulate]
-          mysql.write_parse_result(last_id, count, status)
+        rescue => e
+          say "Error: #{e.message}", :red
+          say "Aborting parser run...", :red
+          status = STATUS[:api_error]
+        ensure
+          mysql.write_parse_result(
+            last_event_id: last_id, 
+            match_count: count,
+            status: status,
+            run_at: start_time,
+            run_time: (Time.now - start_time).round(2)
+          ) unless options[:simulate]
         end
         say "Started:\t", :cyan
         say start_time.strftime('%d.%d.%Y %T')
         say "Runtime:\t", :cyan
         say "#{(Time.now - start_time).round(2)}s"
-        if options[:simulate]
-          say("Events found:\t", :cyan)
-        else
-          say("Events sent:\t", :cyan)
-        end
+        say "Status:\t\t", :cyan
+        say STATUS.key(status).upcase
+        action = options[:simulate] ? "found" : "sent"
+        say("Events #{action}:\t", :cyan)
         say count
       rescue => e
         say "Error: #{e.message}", :red
+        say e.backtrace; :yellow
       end
     end
 
@@ -109,13 +114,14 @@ module SmsLogparser
       begin
         runs = Mysql.new(options).last_runs(options[:results])
         if runs.size > 0
-          table = [%w(RunAt #Events LastEventID Status)]
+          table = [%w(run_at run_time match_count last_event_id status)]
           runs.to_a.reverse.each do |run|
             table << [
-              run['RunAt'],
-              run['EventsFound'],
-              run['LastEventID'],
-              STATUS.key(run['Status']).upcase
+              run['run_at'],
+              "#{run['run_time']}s",
+              run['match_count'],
+              run['last_event_id'],
+              STATUS.key(run['status']).upcase
             ]
           end
           print_table table
