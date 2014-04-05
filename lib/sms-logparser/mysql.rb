@@ -48,7 +48,7 @@ module SmsLogparser
         "SELECT status FROM sms_logparser_runs ORDER BY id DESC LIMIT 1"
       )
       if entry = last_parse.first
-        return false unless entry['status'] == running_state
+        return entry['status'] == running_state ? true : false
       end
       false
     end
@@ -67,13 +67,12 @@ module SmsLogparser
 
     def write_parse_result(options)
       client.query(
-        "UPDATE sms_logparser_runs SET match_count, status, run_time\
+        "UPDATE sms_logparser_runs SET\
           last_event_id = #{options[:last_event_id]},\
           match_count = #{options[:match_count]},\
           status = #{options[:status]},\
           run_time = #{options[:run_time]}\
-        WHERE id = #{options[id]}
-        )"
+        WHERE id = #{options[:id]}"
       )
     end
 
@@ -99,8 +98,6 @@ module SmsLogparser
     end
 
     private
-
-
 
     def select_entries(last_id)
       client.query("SELECT * FROM SystemEvents\

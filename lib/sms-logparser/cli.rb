@@ -2,7 +2,7 @@ module SmsLogparser
   class Cli < Thor
     require 'yaml'
 
-    STATUS = {ok: 0, api_error: 1}
+    STATUS = {ok: 0, api_error: 1, running: 3}
 
     class_option :config, 
       default: File.join(Dir.home, '.sms-logparser.yml'),
@@ -59,14 +59,14 @@ module SmsLogparser
     def parse
       say "Starting the parser...", :green
       mysql = Mysql.new(options)
-      if mysql.parser_running?
-        say "Aborting. Another instance of the parser is already running.", :red
+      if !options[:simulate] && mysql.parser_running?
+        say "Exit. Another instance of the parser is already running.", :yellow
         exit
       end
       state = {
         last_event_id: mysql.get_last_parse_id, 
         match_count: 0,
-        status: STATUS[:ok],
+        status: STATUS[:running],
         run_at: Time.now,
         run_time: 0.0
       }
@@ -82,15 +82,18 @@ module SmsLogparser
           state[:last_event_id] = entry['ID']
         end
       end
+      state[:status] = STATUS[:ok]
     rescue => e
       say "Error: #{e.message}", :red
       say "Aborting parser run...", :red
       state[:status] = STATUS[:api_error] if state
     ensure
       begin
-        if mysql
+        if mysql && state
           state[:run_time] = (Time.now - state[:run_at]).round(2)
-          mysql.write_parse_result(state) unless options[:simulate]
+          if state[:id]
+            mysql.write_parse_result(state) unless options[:simulate]
+          end
           print_parse_results(state)
         end
       rescue => e
