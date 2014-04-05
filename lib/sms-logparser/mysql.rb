@@ -43,15 +43,36 @@ module SmsLogparser
       return 0
     end
 
-    def write_parse_result(options={})
+    def parser_running?(running_state = 3)
+      last_parse = client.query(
+        "SELECT status FROM sms_logparser_runs ORDER BY id DESC LIMIT 1"
+      )
+      if entry = last_parse.first
+        return false unless entry['status'] == running_state
+      end
+      false
+    end
+
+    def start_run(options)
       client.query(
-        "INSERT INTO sms_logparser_runs(run_at, last_event_id, match_count, status, run_time)\
-        VALUES(\
+        "INSERT INTO sms_logparser_runs (run_at, status)\
+        VALUES (\
           '#{options[:run_at].strftime("%Y-%m-%d %H:%M:%S")}',\
-          #{options[:last_event_id]},\
-          #{options[:match_count]},\
-          #{options[:status]},\
-          #{options[:run_time]}
+          #{options[:status]}\
+        )"
+      )
+      options[:id] = client.last_id
+      options
+    end
+
+    def write_parse_result(options)
+      client.query(
+        "UPDATE sms_logparser_runs SET match_count, status, run_time\
+          last_event_id = #{options[:last_event_id]},\
+          match_count = #{options[:match_count]},\
+          status = #{options[:status]},\
+          run_time = #{options[:run_time]}\
+        WHERE id = #{options[id]}
         )"
       )
     end
@@ -65,8 +86,8 @@ module SmsLogparser
       end
       while last_id < max_id
         entries = select_entries(last_id)
-        last_id = entries.to_a[-1]['ID']
         yield entries
+        last_id = entries.to_a[-1]['ID']
       end
     end
 
@@ -79,12 +100,13 @@ module SmsLogparser
 
     private
 
+
+
     def select_entries(last_id)
-      sql = "SELECT * FROM SystemEvents\
+      client.query("SELECT * FROM SystemEvents\
         WHERE `FromHost` like '#{@host_filter}'\
         ORDER BY ID ASC\
-        LIMIT #{last_id},#{@query_limit};"
-      client.query(sql)
+        LIMIT #{last_id},#{@query_limit};")
     end
 
     def get_last_event_id

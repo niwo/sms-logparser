@@ -7,7 +7,7 @@ module SmsLogparser
         raise "No match found." unless m
         traffic_type = Parser.get_traffic_type(m[6])
         visitor_type = Parser.get_visitor_type(traffic_type, m[4])
-        return {
+        data = {
           :customer_id => m[1],
           :author_id => m[2],
           :project_id => m[3],
@@ -16,7 +16,9 @@ module SmsLogparser
           :user_agent => m[6],
           :traffic_type => traffic_type,
           :visitor_type => visitor_type
-        }
+        } 
+        return data unless block_given?
+        yield data
       end
       nil
     end
