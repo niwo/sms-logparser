@@ -81,7 +81,7 @@ module SmsLogparser
             if data
               requests = api.send(data)
               state[:match_count] += 1
-              verbose_parser_output(data, requests, entry) if options[:verbose]
+              verbose_parser_output(data, requests, entry['ID']) if options[:verbose]
             end
           end
           state[:last_event_id] = entry['ID']
@@ -155,9 +155,9 @@ module SmsLogparser
     end
 
     no_commands do
-      def verbose_parser_output(data, requests, entry)
+      def verbose_parser_output(data, requests, entry_id)
         say "ID:\t", :cyan
-        say entry['ID']
+        say entry_id
         say "URL:\t", :cyan
         say requests.map {|req| "#{req[:url]}#{req[:uri]} (Status: #{req[:status] || 'n/a'})"}.join("\n\t")
         say "Data:\t", :cyan

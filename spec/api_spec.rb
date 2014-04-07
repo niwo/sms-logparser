@@ -20,10 +20,10 @@ describe SmsLogparser::Api do
       :traffic_type => 'TRAFFIC_WEBCAST',
       :visitor_type => 'VISITORS_WEBCAST'
     }
-    urls = @api.send(data)
-    urls.size.must_equal 2
-    urls[0].must_match /\/1\/2\/3\/TRAFFIC_WEBCAST\/128$/
-    urls[1].must_match /\/1\/2\/3\/VISITORS_WEBCAST\/1$/
+    requests = @api.send(data)
+    requests.size.must_equal 2
+    requests[0][:uri].must_match /\/1\/2\/3\/TRAFFIC_WEBCAST\/128$/
+    requests[1][:uri].must_match /\/1\/2\/3\/VISITORS_WEBCAST\/1$/
   end
 
   it "does not send traffic for m3u8 files" do
@@ -37,9 +37,9 @@ describe SmsLogparser::Api do
       :traffic_type => 'TRAFFIC_MOBILE',
       :visitor_type => 'VISITORS_MOBILE'
     }
-    urls = @api.send(data)
-    urls.size.must_equal 1
-    urls[0].must_match /\/100\/200\/300\/VISITORS_MOBILE\/1$/
+    requests = @api.send(data)
+    requests.size.must_equal 1
+    requests[0][:uri].must_match /\/100\/200\/300\/VISITORS_MOBILE\/1$/
   end
 
   it "does not send visitor info if no visitor_type" do
@@ -52,9 +52,9 @@ describe SmsLogparser::Api do
       :user_agent => 'Mozilla/5.0 (Android; Mobile; rv:13.0) Gecko/13.0 Firefox/13.0',
       :traffic_type => 'TRAFFIC_MOBILE',
     }
-    urls = @api.send(data)
-    urls.size.must_equal 1
-    urls[0].must_match /\/101\/202\/303\/TRAFFIC_MOBILE\/48$/
+    requests = @api.send(data)
+    requests.size.must_equal 1
+    requests[0][:uri].must_match /\/101\/202\/303\/TRAFFIC_MOBILE\/48$/
   end
 
 end
