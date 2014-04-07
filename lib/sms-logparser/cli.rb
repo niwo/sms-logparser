@@ -15,7 +15,7 @@ module SmsLogparser
     
     class_option :mysql_user,
       aliases: %w(-u),
-      desc: "MySQL user (default: root)"
+      desc: "MySQL user (Default: root)"
     
     class_option :mysql_password,
       aliases: %w(-p),
@@ -23,7 +23,7 @@ module SmsLogparser
     
     class_option :mysql_db,
       aliases: %w(-d),
-      desc: "MySQL database (default: Syslog)"
+      desc: "MySQL database (Default: Syslog)"
 
     desc "version", "Print sms-logparser version number"
     def version
@@ -34,7 +34,7 @@ module SmsLogparser
     desc "parse", "Check the database for pcache logs and send them to the SMS-API"
     option :api_base_url,
       aliases: %w(-a),
-      desc: "Base path of the SMS API (default: http://localhost:8080/)"
+      desc: "Base path of the SMS API (Default: http://localhost:8080/creator/rest/)"
     option :api_key,
       aliases: %w(-k),
       desc: "SMS API Key"
@@ -56,6 +56,9 @@ module SmsLogparser
       type: :boolean,
       default: false,
       desc: "Show debug output"
+    option :accepted_api_responses,
+      type: :array,
+      desc: "API HTTP responses which are accepted (Default: only accept 200)."
     def parse
       say "Starting the parser...", :green
       mysql = Mysql.new(options)
@@ -75,9 +78,11 @@ module SmsLogparser
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         entries.each do |entry| 
           Parser.extract_data_from_msg(entry['Message']) do |data|
-            urls = api.send(data)
-            state[:match_count] += 1
-            verbose_parser_output(data, urls, entry) if options[:verbose]
+            if data
+              requests = api.send(data)
+              state[:match_count] += 1
+              verbose_parser_output(data, requests, entry) if options[:verbose]
+            end
           end
           state[:last_event_id] = entry['ID']
         end
@@ -86,6 +91,7 @@ module SmsLogparser
     rescue => e
       say "Error: #{e.message}", :red
       say "Aborting parser run...", :red
+      say(e.backtrace.join("\n"), :yellow) if options[:debug]
       state[:status] = STATUS[:api_error] if state
     ensure
       begin
@@ -149,13 +155,13 @@ module SmsLogparser
     end
 
     no_commands do
-      def verbose_parser_output(data, uris, entry)
+      def verbose_parser_output(data, requests, entry)
         say "ID:\t", :cyan
         say entry['ID']
         say "URL:\t", :cyan
-        say uris.join("\n\t")
+        say requests.map {|req| "#{req[:url]}#{req[:uri]} (Status: #{req[:status] || 'n/a'})"}.join("\n\t")
         say "Data:\t", :cyan
-        say data.map{|k,v| "#{k}:\t#{v}"}.join("\n\t") || "\n"
+        say data.map{|k,v| "#{k}:\t#{v || '-'}"}.join("\n\t") || "\n"
         puts
         puts "-" * 100
         puts
@@ -177,7 +183,7 @@ module SmsLogparser
         filename = original_options[:config] || File.join(Dir.home, '.sms-logparser.yml')
         return original_options unless File.exists?(filename)
         defaults = ::YAML::load_file(filename) || {}
-        Thor::CoreExt::HashWithIndifferentAccess.new(defaults.merge(original_options))
+        Thor::CoreExt::HashWithIndifferentAccess.new(Defaults.merge(original_options))
       end
     end
 

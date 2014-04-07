@@ -2,25 +2,26 @@ module SmsLogparser
   class Parser
 
     def self.extract_data_from_msg(message)
+      data = nil
       if self.match?(message)
-        m = message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s\d+\s(\d+).+"(.*)"$/
-        raise "No match found." unless m
-        traffic_type = Parser.get_traffic_type(m[6])
-        visitor_type = Parser.get_visitor_type(traffic_type, m[4])
-        data = {
-          :customer_id => m[1],
-          :author_id => m[2],
-          :project_id => m[3],
-          :file =>  m[4],
-          :bytes => m[5],
-          :user_agent => m[6],
-          :traffic_type => traffic_type,
-          :visitor_type => visitor_type
-        } 
-        return data unless block_given?
-        yield data
+        match = message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s\d+\s(\d+).+"(.*)"$/
+        if match
+          traffic_type = Parser.get_traffic_type(match[6])
+          visitor_type = Parser.get_visitor_type(traffic_type, match[4])
+          data = {
+            :customer_id => match[1],
+            :author_id => match[2],
+            :project_id => match[3],
+            :file =>  match[4],
+            :bytes => match[5],
+            :user_agent => match[6],
+            :traffic_type => traffic_type,
+            :visitor_type => visitor_type
+          }
+        end 
       end
-      nil
+      return data unless block_given?
+      yield data
     end
 
     def self.match?(message)
