@@ -52,7 +52,7 @@ module SmsLogparser
       end
       connection.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
       if @options[:api_key]
-        @connection.headers['X-simplex-api-key'] = @options[:api_key]
+        connection.headers['X-simplex-api-key'] = @options[:api_key]
       end
       connection
     end
