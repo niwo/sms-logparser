@@ -5,7 +5,7 @@ module SmsLogparser
     def initialize(options)
       @options = options
       @base_url = URI(@options[:api_base_url] || 'http://localhost:8080/creator/rest/')
-      @url = "#{@base_url.scheme}://#{@base_url.host}"
+      @url = @base_url.to_s.chomp(@base_url.path)
       @accepted_responses =  parse_status_codes(options[:accepted_api_responses]) || [200]
       @connection = connection
     end
