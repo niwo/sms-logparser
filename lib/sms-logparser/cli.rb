@@ -183,7 +183,7 @@ module SmsLogparser
         filename = original_options[:config] || File.join(Dir.home, '.sms-logparser.yml')
         return original_options unless File.exists?(filename)
         defaults = ::YAML::load_file(filename) || {}
-        Thor::CoreExt::HashWithIndifferentAccess.new(Defaults.merge(original_options))
+        Thor::CoreExt::HashWithIndifferentAccess.new(defaults.merge(original_options))
       end
     end
 
