@@ -24,8 +24,9 @@ module SmsLogparser
     end
 
     def create_parser_table(force = false)
+      status = 0
       if force
-        drop_parser_table
+        status = drop_parser_table ? 2 : 0
       elsif parser_table_exists?
         return 1
       end
@@ -40,7 +41,7 @@ module SmsLogparser
           INDEX `last_event_id_I1` (`last_event_id`)
         )"
       )
-      return 0
+      status 
     end
 
     def parser_running?(running_state = 3)
@@ -57,7 +58,7 @@ module SmsLogparser
       client.query(
         "INSERT INTO sms_logparser_runs (run_at, status)\
         VALUES (\
-          '#{options[:run_at].strftime("%Y-%m-%d %H:%M:%S")}',\
+          '#{options[:started_at].strftime("%Y-%m-%d %H:%M:%S")}',\
           #{options[:status]}\
         )"
       )
@@ -131,8 +132,9 @@ module SmsLogparser
     end
 
     def drop_parser_table
-      return nil unless parser_table_exists?
+      return false unless parser_table_exists?
       client.query("DROP TABLE sms_logparser_runs")
+      true
     end
 
   end # class

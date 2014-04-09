@@ -19,7 +19,7 @@ describe SmsLogparser::Cli do
     out, err = capture_io do
       parser.setup
     end
-    out.must_match /OK.*/
+    out.must_match /.*Created database table./
   end
 
   it "can parse a log database and find matches" do
@@ -31,7 +31,7 @@ describe SmsLogparser::Cli do
       parser.setup
       parser.parse  
     end
-    out.must_match /\s+10$/
+    out.must_match /.*match_count=10.*/
   end
 
   # it "skips over already parsed logs" do

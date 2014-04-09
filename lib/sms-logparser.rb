@@ -1,10 +1,11 @@
 require "rubygems" # ruby1.9 doesn't "require" it though
 require "thor"
-require 'mysql2'
-require 'faraday'
+require "mysql2"
+require "faraday"
 
 require "sms-logparser/version"
 require "sms-logparser/mysql"
 require "sms-logparser/parser"
 require "sms-logparser/api"
+require "sms-logparser/app_logger"
 require "sms-logparser/cli"
