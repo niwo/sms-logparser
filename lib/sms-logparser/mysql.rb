@@ -110,11 +110,12 @@ module SmsLogparser
       [max_id, query_limit || @query_limit]
     end
 
-    def select_entries(offset, max_entries = @query_limit)
+    def select_entries(last_id, max_entries = @query_limit)
       query = %Q{SELECT * FROM SystemEvents
-        WHERE `FromHost` like '#{@host_filter}'
+        WHERE `FromHost` like '#{@host_filter}' AND
+              `ID` > #{last_id}
         ORDER BY ID ASC
-        LIMIT #{offset},#{max_entries};}.gsub(/\s+/, " ").strip
+        LIMIT #{max_entries};}.gsub(/\s+/, " ").strip
       @logger.info("Querying for events... (#{query})") if @options[:debug]
       client.query(query)
     end
