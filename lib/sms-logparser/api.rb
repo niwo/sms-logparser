@@ -13,7 +13,7 @@ module SmsLogparser
 
     def send(data)
       requests = []
-      path = @base_path << [data[:customer_id], data[:author_id], data[:project_id]].join('/')
+      path = @base_path + [data[:customer_id], data[:author_id], data[:project_id]].join('/')
       unless data[:file] =~ /.*\.m3u8$/
         requests << {
           url: @url, 
