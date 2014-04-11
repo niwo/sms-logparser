@@ -2,7 +2,7 @@ module SmsLogparser
   class Cli < Thor
     require 'yaml'
 
-    STATUS = {ok: 0, api_error: 1, running: 3}
+    STATUS = {ok: 0, api_error: 1, running: 3, interrupted: 4}
 
     class_option :config, 
       default: File.join(Dir.home, '.sms-logparser.yml'),
@@ -62,11 +62,15 @@ module SmsLogparser
           end
         end
       end
-      state[:status] = STATUS[:ok]
+    rescue SystemExit, Interrupt
+      logger.error("Received ctrl-c. Stopping the parser run.")
+      state[:status] = STATUS[:interrupted] if state
     rescue => e
       logger.error("#{e.message}. Aborting the parser run.")
       say(e.backtrace.join("\n"), :yellow) if options[:debug]
       state[:status] = STATUS[:api_error] if state
+    else
+      state[:status] = STATUS[:ok]
     ensure
       begin
         if mysql && state

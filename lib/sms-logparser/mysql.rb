@@ -117,14 +117,14 @@ module SmsLogparser
         ORDER BY ID ASC
         LIMIT #{max_entries};}.gsub(/\s+/, " ").strip
       @logger.info("Querying for events... (#{query})") if @options[:debug]
-      client.query(query)
+      client.query(query, cache_rows: false)
     end
 
     def get_last_event_id
       last_event = client.query(
-        "SELECT ID FROM SystemEvents ORDER BY ID DESC LIMIT 1"
+        "SELECT MAX(ID) as max_id FROM SystemEvents"
       )
-      last_event.first ? last_event.first['ID'] : 0
+      last_event.first ? last_event.first['max_id'] : 0
     end
 
     def parser_table_exists?
