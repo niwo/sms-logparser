@@ -89,6 +89,8 @@ module SmsLogparser
     desc "history", "List the last paser runs"
     option :results, type: :numeric, default: 10, aliases: %w(-n),
       desc: "Number of results to display"
+    option :format, type: :string, default: 'table', aliases: %w(-f),
+      desc: "Output format [table|csv]"
     def history
       runs = Mysql.new(options).last_runs(options[:results])
       if runs && runs.size > 0
@@ -103,7 +105,9 @@ module SmsLogparser
             "#{run['run_time']}s"
           ]
         end
-        print_table table
+        options[:format] == 'csv' ? 
+          table_to_csv(table) :
+          print_table(table)
       else
         say "No parser runs found in the database."
       end
@@ -141,6 +145,12 @@ module SmsLogparser
         logger.info {
           "parser urls for entry #{entry_id} (#{requests.map {|req| "#{req[:url]}#{req[:uri]}"}.join(" ")})"
         }
+      end
+
+      def table_to_csv(table)
+        table.each do |line|
+          puts line.join(',')
+        end
       end
 
       def log_parse_results(res)
