@@ -39,7 +39,7 @@ module SmsLogparser
       mysql = Mysql.new(options)
       if !options[:simulate] && mysql.parser_running?
         logger.warn("Exit. Another instance of the parser is already running.")
-        exit
+        exit!
       end
       state = {
         last_event_id: mysql.get_last_parse_id, 

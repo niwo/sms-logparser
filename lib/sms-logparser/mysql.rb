@@ -112,12 +112,12 @@ module SmsLogparser
 
     def select_entries(last_id, max_entries = @query_limit)
       query = %Q{SELECT * FROM SystemEvents
-        WHERE `FromHost` like '#{@host_filter}' AND
-              `ID` > #{last_id}
+        WHERE FromHost like '#{@host_filter}' AND
+              ID > #{last_id}
         ORDER BY ID ASC
         LIMIT #{max_entries};}.gsub(/\s+/, " ").strip
       @logger.info("Querying for events... (#{query})") if @options[:debug]
-      client.query(query, cache_rows: false)
+      client.query(query)
     end
 
     def get_last_event_id
