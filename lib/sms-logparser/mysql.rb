@@ -6,7 +6,7 @@ module SmsLogparser
       @host_filter = options[:host_filter] || 'pcache%'
       @query_limit = options[:query_limit] || 1000
       @client = client
-      @logger = SmsLogparser::AppLogger.instance
+      @logger = SmsLogparser::Loggster.instance
     end
 
     def client
@@ -116,7 +116,7 @@ module SmsLogparser
               ID > #{last_id}
         ORDER BY ID ASC
         LIMIT #{max_entries};}.gsub(/\s+/, " ").strip
-      @logger.info("Querying for events... (#{query})") if @options[:debug]
+      @logger.debug { "Querying for events... (#{query})" }
       client.query(query)
     end
 

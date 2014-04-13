@@ -9,8 +9,9 @@ module SmsLogparser
       aliases: %w(-c),
       desc: "Configuration file for default options"
 
-    class_option :debug, type: :boolean, desc: "Show debug output"
-    class_option :logfile, desc: "Path to the logfile (Default: STDOUT)"
+    class_option :severity, type: :string, aliases: %w(-S),
+      desc: "Log severity <debug|info|warn|error|fatal> (Default: warn)"
+    class_option :logfile, desc: "Path to the logfile (Default: STDOUT)", aliases: %w(-l)
     class_option :mysql_host, aliases: %w(-h), desc: "MySQL host"
     class_option :mysql_user, aliases: %w(-u), desc: "MySQL user (Default: root)"
     class_option :mysql_password, aliases: %w(-p), desc: "MySQL password"
@@ -29,7 +30,7 @@ module SmsLogparser
     option :simulate, type: :boolean, aliases: %w(-s),
       desc: "Dry run without submitting any data"
     option :verbose, type: :boolean, aliases: %w(-v), desc: "Verbose output"
-    option :limit, type: :numeric, aliases: %w(-l), desc: "Limit the number of entries to query"
+    option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
     option :accepted_api_responses, type: :array, aliases: %w(-r),
       desc: "API HTTP responses which are accepted (Default: only accept 200)."
     def parse
@@ -56,18 +57,18 @@ module SmsLogparser
             if data
               requests = api.send(data)
               state[:match_count] += 1
-              verbose_parser_output(entry['ID'], data, requests) if options[:verbose]
+              verbose_parser_output(entry['ID'], data, requests)
               state[:last_event_id] = entry['ID']
             end
           end
         end
       end
     rescue SystemExit, Interrupt
-      logger.error("Received ctrl-c. Stopping the parser run.")
+      logger.error("Received an interrupt. Stopping the parser run.")
       state[:status] = STATUS[:interrupted] if state
     rescue => e
-      logger.error("#{e.message}. Aborting the parser run.")
-      say(e.backtrace.join("\n"), :yellow) if options[:debug]
+      logger.error "Aborting the parser run."
+      logger.error e
       state[:status] = STATUS[:api_error] if state
     else
       state[:status] = STATUS[:ok]
@@ -81,8 +82,7 @@ module SmsLogparser
           log_parse_results(state)
         end
       rescue => e
-        logger.fatal(e.message)
-        say(e.backtrace.join("\n"), :yellow) if options[:debug]
+        logger.fatal e
       end
     end
 
@@ -129,22 +129,24 @@ module SmsLogparser
         logger.info("Recreated database tables.")
       end
     rescue => e
-      logger.fatal(e.message)
-      say(e.backtrace.join("\n"), :yellow) if options[:debug]
+      logger.fatal e
     end
 
     no_commands do
       def logger
-        SmsLogparser::AppLogger.instance.set_log_device(options[:logfile])
+        SmsLogparser::Loggster.instance.set_severity options[:severity]
+        SmsLogparser::Loggster.instance.set_log_device options[:logfile]
       end
 
       def verbose_parser_output(entry_id, data, requests)
-        logger.info {
+        logger.debug {
           "parsing data for #{entry_id} (#{data.map{|k,v| "#{k}=\"#{v || '-'}\""}.join(" ") || ''})"
         }
-        logger.info {
-          "parser urls for entry #{entry_id} (#{requests.map {|req| "#{req[:url]}#{req[:uri]}"}.join(" ")})"
-        }
+        requests.each_with_index do |req, i|
+          logger.debug {
+            "URL #{i + 1} for entry #{entry_id} #{req[:url]}#{req[:uri]}"
+          }
+        end
       end
 
       def table_to_csv(table)

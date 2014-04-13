@@ -1,6 +1,7 @@
 module SmsLogparser
   class Api
     require 'uri'
+    require 'thread'
 
     def initialize(options)
       @options = options
@@ -12,6 +13,28 @@ module SmsLogparser
     end
 
     def send(data)
+      requests = build_urls(data)
+      return requests if @options[:simulate]
+
+      threads = requests.map do |request|
+        Thread.new do
+          begin
+            response = @connection.post(request[:uri])
+            request[:status] = response.status
+          rescue => e
+            raise RuntimeError, "Can't send request to #{request[:uri]}. #{e.message}", caller
+          end
+          unless @accepted_responses.include?(response.status)
+            msg = "Received HTTP status #{response.status} from API. Only accepting #{@accepted_responses.join(', ')}."
+            raise RuntimeError, msg, caller
+          end
+        end
+      end
+      threads.each {|thread| thread.join }
+      requests
+    end
+
+    def build_urls(data)
       requests = []
       path = @base_path + [data[:customer_id], data[:author_id], data[:project_id]].join('/')
       unless data[:file] =~ /.*\.m3u8$/
@@ -26,20 +49,6 @@ module SmsLogparser
           uri: [path, data[:visitor_type], 1].join('/')
         }
       end
-      unless @options[:simulate]
-        requests.each_with_index do |request, i|
-          begin
-            response = @connection.post(request[:uri])
-            requests[i][:status] = response.status
-          rescue => e
-            raise RuntimeError, "Can't send request to #{request[:uri]}. #{e.message}", caller
-          end
-          unless @accepted_responses.include?(response.status)
-            msg = "Received HTTP status #{response.status} from API. Only accepting #{@accepted_responses.join(', ')}."
-            raise RuntimeError, msg, caller
-          end
-        end
-      end
       requests
     end
 
@@ -48,15 +57,11 @@ module SmsLogparser
     def connection
       connection = Faraday.new(url: @url, request: {timeout: 5}) do |faraday|
         faraday.request :url_encoded
-        if @options[:debug]
-          faraday.use Faraday::Response::Logger, SmsLogparser::AppLogger.instance 
-        end
+        faraday.use Faraday::Response::Logger, SmsLogparser::Loggster.instance 
         faraday.adapter :net_http_persistent
       end
       connection.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
-      if @options[:api_key]
-        connection.headers['X-simplex-api-key'] = @options[:api_key]
-      end
+      connection.headers['X-simplex-api-key'] = @options[:api_key] if @options[:api_key]
       connection
     end
 

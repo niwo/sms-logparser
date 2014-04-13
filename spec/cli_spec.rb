@@ -26,12 +26,14 @@ describe SmsLogparser::Cli do
     TestHelper.seed_db(10)
     parser = TestHelper.sms_logparser
     parser.options[:simulate] = true
+    parser.options[:logfile] = '/tmp/sms-logparser.log'
     #parser.options[:api_base_url] = "http://localhost/creator/rest/"
     out, err = capture_io do
       parser.setup
       parser.parse  
     end
-    out.must_match /.*match_count=10.*/
+    #out.must_match 
+    file('/tmp/sms-logparser.log').must_include "match_count=10"
   end
 
   # it "skips over already parsed logs" do
@@ -51,6 +53,7 @@ describe SmsLogparser::Cli do
     parser = TestHelper.sms_logparser
     parser.options[:simulate] = true
     parser.options[:force] = true
+    parser.options[:logfile] = '/dev/null'
 
     out, err = capture_io do
       parser.setup
