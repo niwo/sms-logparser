@@ -80,6 +80,7 @@ module SmsLogparser
             mysql.write_parse_result(state) unless options[:simulate]
           end
           log_parse_results(state)
+          SmsLogparser::Loggster.instance.close
         end
       rescue => e
         logger.fatal e
@@ -128,6 +129,7 @@ module SmsLogparser
       when 2
         logger.info("Recreated database tables.")
       end
+      SmsLogparser::Loggster.instance.close
     rescue => e
       logger.fatal e
     end
