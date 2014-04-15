@@ -28,9 +28,8 @@ module SmsLogparser
     end
 
     def self.match?(message)
-      match = message.match(
-        /\/content\/.+\/(\w+\.(f4v|flv|mp4|mp3|ts|m3u8)) .+ (200|206)/i
-      )
+      match = message.match(/\/content\/.+\/(\S+) .+ (200|206)/i)
+      # ignore detect.mp4 and index.m3u8 
       if match
         return true unless match[1] =~ /detect.mp4|index.m3u8/i
       end

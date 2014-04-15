@@ -2,19 +2,11 @@ require 'spec_helper'
 
 describe SmsLogparser::Parser do
 
-  %w(f4v flv mp4 mp3 ts m3u8).each do |extension|
+  %w(f4v flv mp4 mp3 ts m3u8 jpg js css m4a png sid).each do |extension|
     it "matches #{extension} files" do
       SmsLogparser::Parser.match?(
         "GET /content/2/719/54986/file.#{extension} HTTP/1.1\" 200 6741309 "
       ).must_equal true
-    end
-  end
-
-  %w(jpg js css m4a docx).each do |extension|
-    it "does not matche #{extension} files" do
-      SmsLogparser::Parser.match?(
-        "GET /content/2/719/54986/file.#{extension} HTTP/1.1\" 200 6741309 "
-      ).must_equal false
     end
   end
 
