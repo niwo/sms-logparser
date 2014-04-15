@@ -42,27 +42,23 @@ module SmsLogparser
     def self.get_traffic_type(user_agent)
       case user_agent
       when /.*(iTunes).*/
-        "TRAFFIC_PODCAST"
+        'TRAFFIC_PODCAST'
       when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
-        "TRAFFIC_MOBILE"
+        'TRAFFIC_MOBILE'
       else
-        "TRAFFIC_WEBCAST"
+        'TRAFFIC_WEBCAST'
       end
     end
 
     def self.get_visitor_type(traffic_type, file)
-      return "VISITORS_MOBILE" if file == 'index.m3u8'
+      return 'VISITORS_MOBILE' if File.extname(file) == '.m3u8'
       case traffic_type
-      when "TRAFFIC_PODCAST"
-        "VISITORS_PODCAST"
-      when "TRAFFIC_MOBILE"
-        if File.extname(file) != ".ts"
-          "VISITORS_MOBILE"
-        else
-          nil
-        end
+      when 'TRAFFIC_PODCAST'
+        'VISITORS_PODCAST'
+      when 'TRAFFIC_MOBILE'
+        File.extname(file) != '.ts' ? 'VISITORS_MOBILE' : nil
       else
-        "VISITORS_WEBCAST"
+        'VISITORS_WEBCAST'
       end
     end
 

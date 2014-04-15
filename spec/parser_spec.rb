@@ -63,6 +63,14 @@ describe SmsLogparser::Parser do
     end
   end
 
+  [
+    '127.0.0.1 - - [13/Apr/2014:05:33:23 +0200] "GET /content/51/52/42481/simvid_1.mp4 HTTP/1.1" 206 7865189 "-" "iTunes/11.1.5 (Windows; Microsoft Windows 7 Home Premium Edition Service Pack 1 (Build 7601)) AppleWebKit/537.60.11"'
+  ].each do |podcast_agent|
+    it "traffic type for mobile user agents is TRAFFIC_PODCAST (#{podcast_agent})" do
+      SmsLogparser::Parser.get_traffic_type(podcast_agent).must_equal "TRAFFIC_PODCAST"
+    end
+  end
+
   it "should set visitor_type to VISITORS_MOBILE for index.m3u8 files" do
     SmsLogparser::Parser.get_visitor_type(
       "TRAFFIC_PODCAST", "index.m3u8"
