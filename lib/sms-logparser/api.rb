@@ -10,7 +10,10 @@ module SmsLogparser
       @base_path = (@base_url.path << "/").squeeze('/')
       @accepted_responses =  parse_status_codes(options[:accepted_api_responses]) || [200]
       @connection = connection
+      @data_cache = {}
     end
+
+
 
     def send(data)
       requests = build_urls(data)
@@ -55,7 +58,7 @@ module SmsLogparser
     private
 
     def connection
-      connection = Faraday.new(url: @url, request: {timeout: 5}) do |faraday|
+      connection = Faraday.new(url: @url, request: {timeout: 20}) do |faraday|
         faraday.request :url_encoded
         faraday.adapter :net_http_persistent
         if @options[:severity] == "debug"

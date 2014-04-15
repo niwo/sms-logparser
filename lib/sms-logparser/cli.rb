@@ -87,6 +87,27 @@ module SmsLogparser
       end
     end
 
+    desc "cached_pase", "Check the database for pcache logs and put them into the cache"
+    option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
+    def cached_parse
+      cache = DataCache.new
+      mysql = Mysql.new(options)
+      say "Getting entries from database..."
+      mysql.get_entries(last_id: mysql.get_last_parse_id, limit: options[:limit]) do |entries|
+        entries.each do |entry| 
+          Parser.extract_data_from_msg(entry['Message']) do |data|
+            if data
+              cache.add(data)
+              say "Cached data ", :magenta
+              say data
+            end
+          end
+        end
+      end
+      puts
+      puts cache.cache
+    end
+
     desc "history", "List the last paser runs"
     option :results, type: :numeric, default: 10, aliases: %w(-n),
       desc: "Number of results to display"

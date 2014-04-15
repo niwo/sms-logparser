@@ -79,9 +79,9 @@ module SmsLogparser
 
     def get_entries(options={})
       last_id = options[:last_id] || get_last_parse_id
-      max_id, query_limit = get_query_limits(last_id, options[:limit])
+      max_id = get_max_id(last_id, options[:limit])
       while last_id < max_id
-        entries = select_entries(last_id, query_limit)
+        entries = select_entries(last_id, max_id)
         yield entries
         entries = entries.to_a
         last_id = entries.size > 0 ? entries[-1]['ID'] : max_id
@@ -97,24 +97,20 @@ module SmsLogparser
 
     private
 
-    def get_query_limits(last_id, user_limit = nil)
-      if user_limit
+    def get_max_id(last_id, user_limit = nil)
+      max_id = get_last_event_id
+      if user_limit && user_limit < (max_id - last_id)
         max_id = last_id + user_limit
-        if @query_limit > user_limit
-          query_limit = user_limit
-        end
-      else 
-        max_id = get_last_event_id
       end
-      [max_id, query_limit || @query_limit]
+      max_id
     end
 
-    def select_entries(last_id, max_entries = @query_limit)
+    def select_entries(last_id, max_id)
       query = %Q{
         SELECT ID, Message FROM SystemEvents
-        WHERE ID > #{last_id}
+        WHERE ID BETWEEN #{last_id} AND #{max_id}
         ORDER BY ID ASC
-        LIMIT #{max_entries};
+        LIMIT #{@query_limit};
       }.gsub(/\s+/, " ").strip
       @logger.debug { "Querying for events... (#{query})" }
       client.query(query)
