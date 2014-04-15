@@ -14,7 +14,6 @@ module SmsLogparser
     end
 
 
-
     def send(data)
       requests = build_urls(data)
       return requests if @options[:simulate]
@@ -35,6 +34,45 @@ module SmsLogparser
       end
       threads.each {|thread| thread.join }
       requests
+    end
+
+    def send_from_queue(data_sets)
+      queue     = Queue.new
+      semaphore = Mutex.new
+      data_sets.each {|set| queue << set }
+      threads = 4.times.map do
+        Thread.new do
+          while !queue.empty?
+            begin
+              data = queue.pop
+              url = @base_path + [
+                data[:customer_id],
+                data[:author_id],
+                data[:project_id],
+                data[:type],
+                data[:value]
+              ].join('/')
+              if @options[:simulate]
+                semaphore.synchronize {
+                  yield url, 0
+                }
+                break
+              end
+              response = @connection.post(url)
+            rescue => e
+              raise RuntimeError, "Can't send request to #{url}. #{e.message}", caller
+            end
+            unless @accepted_responses.include?(response.status)
+              msg = "Received HTTP status #{response.status} from API. Only accepting #{@accepted_responses.join(', ')}."
+              raise RuntimeError, msg, caller
+            end
+            semaphore.synchronize {
+              yield url, response.status
+            }
+          end
+        end
+      end
+      threads.each {|thread| thread.join }
     end
 
     def build_urls(data)

@@ -88,24 +88,74 @@ module SmsLogparser
     end
 
     desc "cached_pase", "Check the database for pcache logs and put them into the cache"
+    option :api_base_url, aliases: %w(-a),
+      desc: "Base path of the SMS API (Default: http://localhost:8080/creator/rest/)"
+    option :api_key, aliases: %w(-k), desc: "SMS API Key"
+    option :simulate, type: :boolean, aliases: %w(-s),
+      desc: "Dry run without submitting any data"
+    option :verbose, type: :boolean, aliases: %w(-v), desc: "Verbose output"
     option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
+    option :accepted_api_responses, type: :array, aliases: %w(-r),
+      desc: "API HTTP responses which are accepted (Default: only accept 200)."
     def cached_parse
+      start_message = "Parser started"
+      start_message += options[:simulate] ? " in simulation mode." : "."
+      logger.info(start_message)
+      mysql = Mysql.new(options)
+      if !options[:simulate] && mysql.parser_running?
+        logger.warn("Exit. Another instance of the parser is already running.")
+        exit!
+      end
+      state = {
+        last_event_id: mysql.get_last_parse_id, 
+        match_count: 0,
+        status: STATUS[:running],
+        started_at: Time.now,
+        run_time: 0.0
+      }
+      state = mysql.start_run(state) unless options[:simulate]
       cache = DataCache.new
       mysql = Mysql.new(options)
       say "Getting entries from database..."
-      mysql.get_entries(last_id: mysql.get_last_parse_id, limit: options[:limit]) do |entries|
+      mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         entries.each do |entry| 
           Parser.extract_data_from_msg(entry['Message']) do |data|
             if data
               cache.add(data)
-              say "Cached data ", :magenta
-              say data
+              logger.debug {"Cached data: #{data}"}
+              state[:match_count] += 1
+              state[:last_event_id] = entry['ID']
             end
           end
         end
       end
-      puts
-      puts cache.cache
+      api = Api.new(options)
+      api.send_from_queue(cache.data_sets) do |url, response|
+        say "#{url} (#{response})"
+      end
+    rescue SystemExit, Interrupt
+      logger.error("Received an interrupt. Stopping the parser run.")
+      state[:status] = STATUS[:interrupted] if state
+    rescue => e
+      logger.error "Aborting the parser run."
+      logger.error e
+      state[:status] = STATUS[:api_error] if state
+    else
+      state[:status] = STATUS[:ok]
+    ensure
+      begin
+        if mysql && state
+          state[:run_time] = (Time.now - state[:started_at]).round(2)
+          if state[:id]
+            mysql.write_parse_result(state) unless options[:simulate]
+          end
+          log_parse_results(state)
+          SmsLogparser::Loggster.instance.close
+        end
+      rescue => e
+        logger.fatal e
+      end
+
     end
 
     desc "history", "List the last paser runs"

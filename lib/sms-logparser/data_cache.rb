@@ -20,6 +20,23 @@ module SmsLogparser
       @cache
     end
 
+    def data_sets
+      sets = []
+      types = %w(TRAFFIC_PODCAST TRAFFIC_MOBILE TRAFFIC_WEBCAST VISITORS_PODCAST VISITORS_MOBILE VISITORS_WEBCAST)
+      @cache.each do |key, values|
+        types.each do |type|
+          sets << {
+            customer_id: values[:customer_id],
+            author_id: values[:author_id],
+            project_id: values[:project_id],
+            type: type,
+            value: values[type]
+          } if values[type]
+        end
+      end
+      sets
+    end
+
     private
 
     def initialize_value(data)
