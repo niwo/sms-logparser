@@ -57,8 +57,10 @@ module SmsLogparser
     def connection
       connection = Faraday.new(url: @url, request: {timeout: 5}) do |faraday|
         faraday.request :url_encoded
-        faraday.use Faraday::Response::Logger, SmsLogparser::Loggster.instance 
         faraday.adapter :net_http_persistent
+        if @options[:severity] == "debug"
+          faraday.use Faraday::Response::Logger, SmsLogparser::Loggster.instance
+        end
       end
       connection.headers[:user_agent] = "sms-logparser v#{SmsLogparser::VERSION}"
       connection.headers['X-simplex-api-key'] = @options[:api_key] if @options[:api_key]
