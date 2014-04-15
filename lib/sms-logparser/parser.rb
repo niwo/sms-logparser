@@ -4,6 +4,7 @@ module SmsLogparser
     def self.extract_data_from_msg(message)
       data = nil
       if self.match?(message)
+        SmsLogparser::Loggster.instance.debug { "Parser MATCH: #{message}" }
         match = message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s\d+\s(\d+).+"(.*)"$/
         if match
           traffic_type = Parser.get_traffic_type(match[6])
@@ -18,7 +19,9 @@ module SmsLogparser
             :traffic_type => traffic_type,
             :visitor_type => visitor_type
           }
-        end 
+        end
+      else
+        SmsLogparser::Loggster.instance.debug { "Parser IGNORE: #{message}" }
       end
       return data unless block_given?
       yield data
