@@ -3,7 +3,6 @@ module SmsLogparser
 
     def initialize(options)
       @options = options
-      @host_filter = options[:host_filter] || 'pcache%'
       @query_limit = options[:query_limit] || 1000
       @client = client
       @logger = SmsLogparser::Loggster.instance
@@ -111,11 +110,12 @@ module SmsLogparser
     end
 
     def select_entries(last_id, max_entries = @query_limit)
-      query = %Q{SELECT * FROM SystemEvents
-        WHERE FromHost like '#{@host_filter}' AND
-              ID > #{last_id}
+      query = %Q{
+        SELECT ID, Message FROM SystemEvents
+        WHERE ID > #{last_id}
         ORDER BY ID ASC
-        LIMIT #{max_entries};}.gsub(/\s+/, " ").strip
+        LIMIT #{max_entries};
+      }.gsub(/\s+/, " ").strip
       @logger.debug { "Querying for events... (#{query})" }
       client.query(query)
     end
