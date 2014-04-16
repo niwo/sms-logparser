@@ -108,7 +108,7 @@ module SmsLogparser
     def select_entries(last_id, max_id)
       query = %Q{
         SELECT ID, Message FROM SystemEvents
-        WHERE ID BETWEEN #{last_id} AND #{max_id}
+        WHERE ID BETWEEN #{last_id + 1} AND #{max_id}
         ORDER BY ID ASC
         LIMIT #{@query_limit};
       }.gsub(/\s+/, " ").strip

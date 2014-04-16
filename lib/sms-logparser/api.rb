@@ -13,7 +13,6 @@ module SmsLogparser
       @data_cache = {}
     end
 
-
     def send(data)
       requests = build_urls(data)
       return requests if @options[:simulate]
@@ -36,11 +35,11 @@ module SmsLogparser
       requests
     end
 
-    def send_from_queue(data_sets)
+    def send_sets(data_sets, concurrency=4)
       queue     = Queue.new
       semaphore = Mutex.new
       data_sets.each {|set| queue << set }
-      threads = 4.times.map do
+      threads = concurrency.times.map do
         Thread.new do
           while !queue.empty?
             begin
