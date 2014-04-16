@@ -20,17 +20,17 @@ module SmsLogparser
       self
     end
 
-    def set_severity(severity = "info")
+    def set_severity(severity = :info)
       self.sev_threshold = case severity
-      when "debug"
+      when "DEBUG" || :debug
         Logger::DEBUG
-      when "info"
+      when "INFO" || :info
         Logger::INFO
-      when "warn"
+      when "WARN" || :warn
         Logger::WARN
-      when "error"
+      when "ERROR" || :error
         Logger::ERROR
-      when "fatal"
+      when "FATAL" || :fatal
         Logger::FATAL
       else 
         Logger::INFO

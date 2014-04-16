@@ -52,21 +52,20 @@ module SmsLogparser
                 data[:value]
               ].join('/')
               if @options[:simulate]
-                semaphore.synchronize {
-                  yield url, 0
-                }
-                break
+                status = 200
+              else
+                response = @connection.post(url)
+                status = response.status
               end
-              response = @connection.post(url)
             rescue => e
               raise RuntimeError, "Can't send request to #{url}. #{e.message}", caller
             end
-            unless @accepted_responses.include?(response.status)
-              msg = "Received HTTP status #{response.status} from API. Only accepting #{@accepted_responses.join(', ')}."
+            unless @accepted_responses.include?(status)
+              msg = "Received HTTP status #{status} from API. Only accepting #{@accepted_responses.join(', ')}."
               raise RuntimeError, msg, caller
             end
             semaphore.synchronize {
-              yield url, response.status
+              yield url, status
             }
           end
         end

@@ -10,7 +10,7 @@ module SmsLogparser
       desc: "Configuration file for default options"
 
     class_option :severity, type: :string, aliases: %w(-S),
-      desc: "Log severity <debug|info|warn|error|fatal> (Default: warn)"
+      desc: "Log severity <DEBUG|INFO|WARN|ERROR|FATAL> (Default: INFO)"
     class_option :logfile, desc: "Path to the logfile (Default: STDOUT)", aliases: %w(-l)
     class_option :mysql_host, aliases: %w(-h), desc: "MySQL host"
     class_option :mysql_user, aliases: %w(-u), desc: "MySQL user (Default: root)"
@@ -33,17 +33,19 @@ module SmsLogparser
     option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
     option :accepted_api_responses, type: :array, aliases: %w(-r),
       desc: "API HTTP responses which are accepted (Default: only accept 200)."
-    option :cache, type: :boolean, desc: "Accumulate and cache results and send totals"
-    option :concurrency, type: :numeric, default: 4,
+    option :accumulate, type: :boolean, aliases: %w(-A),
+      desc: "Accumulate and cache results and send totals"
+    option :concurrency, type: :numeric, default: 4, aliases: %w(-C),
       desc: "How many threads to use in parallel when sending cached results"
     def parse
       start_message = "Parser started"
       start_message += options[:simulate] ? " in simulation mode." : "."
       logger.info(start_message)
-      cache = DataCache.new if options[:cache]
+      cache = DataCache.new if options[:accumulate]
       mysql = Mysql.new(options)
       if !options[:simulate] && mysql.parser_running?
         logger.warn("Exit. Another instance of the parser is already running.")
+        SmsLogparser::Loggster.instance.close
         exit!
       end
       state = {
@@ -56,10 +58,11 @@ module SmsLogparser
       state = mysql.start_run(state) unless options[:simulate]
       api = Api.new(options)
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
+        logger.info { "Getting log messages from database..." }
         entries.each do |entry| 
           Parser.extract_data_from_msg(entry['Message']) do |data|
             if data
-              if options[:cache]
+              if options[:accumulate]
                 cache.add(data)
                 logger.debug {"Cached data: #{data}"}
               else
@@ -72,7 +75,7 @@ module SmsLogparser
           end
         end
       end
-      if options[:cache]
+      if options[:accumulate]
         api.send_sets(cache.data_sets, options[:concurrency]) do |url, response|
           logger.info { "POST #{url} (#{response})" }
         end
