@@ -3,9 +3,10 @@ module SmsLogparser
 
     def initialize(options)
       @options = options
-      @query_limit = options[:query_limit] || 1000
+      @query_limit = options[:query_limit] || 5000
       @client = client
       @logger = SmsLogparser::Loggster.instance
+      @max_retries = 5
     end
 
     def client
@@ -67,14 +68,29 @@ module SmsLogparser
     end
 
     def write_parse_result(options)
-      client.query(
-        "UPDATE sms_logparser_runs SET\
-          last_event_id = #{options[:last_event_id]},\
-          match_count = #{options[:match_count]},\
-          status = #{options[:status]},\
-          run_time = #{options[:run_time]}\
-        WHERE id = #{options[:id]}"
-      )
+      query = %Q{
+        UPDATE sms_logparser_runs
+        SET last_event_id = #{options[:last_event_id]},
+          match_count = #{options[:match_count]},
+          status = #{options[:status]},
+          run_time = #{options[:run_time]}
+        WHERE id = #{options[:id]};
+      }.gsub(/\s+/, " ").strip
+      retries = 0
+      begin
+        client.query(query)
+      rescue Mysql2::Error => exception
+        @logger.error exception
+        if (retries += 1) > @max_retries
+          @logger.fatal "Can't write parser result to database after #{@max_retries} retries. (#{@query})"
+          raise
+        end
+        sleeptime = @max_retries * retries
+        @logger.info "Retry writing parser results in #{sleeptime} seconds."
+        sleep sleeptime
+        retry 
+      end
+      true
     end
 
     def get_entries(options={})
@@ -90,9 +106,25 @@ module SmsLogparser
 
     def get_last_parse_id
       last_parse = client.query(
-        "SELECT last_event_id FROM sms_logparser_runs ORDER BY id DESC LIMIT 1"
+        "SELECT last_event_id FROM sms_logparser_runs ORDER BY id DESC LIMIT 1;"
       )
       last_parse.first ? last_parse.first['last_event_id'] : 0
+    end
+
+    def clean_up_events_table
+      last_parse = client.query(
+        "SELECT last_event_id FROM sms_logparser_runs WHERE status = 0 ORDER BY id DESC LIMIT 1;"
+      )
+      if last_parse.first
+        id = last_parse.first['last_event_id']
+        client.query("DELETE FROM sms_logparser_runs WHERE id < #{id};")
+      end
+      true
+    end
+
+    def clean_up_parser_table(keep_days = 7)
+      time = (Time.now - 3600 * 24 * keep_days.to_i).strftime("%Y-%m-%d %H:%M:%S")
+      client.query("DELETE FROM sms_logparser_runs WHERE run_at < '#{time}';")
     end
 
     private
@@ -118,20 +150,20 @@ module SmsLogparser
 
     def get_last_event_id
       last_event = client.query(
-        "SELECT MAX(ID) as max_id FROM SystemEvents"
+        "SELECT MAX(ID) as max_id FROM SystemEvents;"
       )
       last_event.first ? last_event.first['max_id'] : 0
     end
 
     def parser_table_exists?
       client.query(
-        "SHOW TABLES LIKE 'sms_logparser_runs'"
+        "SHOW TABLES LIKE 'sms_logparser_runs';"
       ).size > 0
     end
 
     def drop_parser_table
       return false unless parser_table_exists?
-      client.query("DROP TABLE sms_logparser_runs")
+      client.query("DROP TABLE sms_logparser_runs;")
       true
     end
 

@@ -40,7 +40,7 @@ module SmsLogparser
     # for mobile browser detection
     def self.get_traffic_type(user_agent)
       case user_agent
-      when /.*(iTunes).*/
+      when /.*(iTunes).*/i
         'TRAFFIC_PODCAST'
       when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
         'TRAFFIC_MOBILE'
