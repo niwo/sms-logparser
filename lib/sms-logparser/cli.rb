@@ -139,14 +139,18 @@ module SmsLogparser
       mysql = Mysql.new(options)
       case mode
       when "all"
+        logger.info("Clean up parser table...")
         mysql.clean_up_parser_table
+        logger.info("Clean up events table...")
         mysql.clean_up_events_table
         logger.info("All tables have been cleaned up.")
       when "events"
+        logger.info("Clean up events table...")
         mysql.clean_up_events_table
         logger.info("Events table has been cleaned up.")
       when "parser"
-        mysql.clean_up_events_table
+        logger.info("Clean up parser table...")
+        mysql.clean_up_parser_table
         logger.info("Parser table has been cleaned up.")
       else
         logger.warn("Mode '#{mode}' not allowed. Allowed modes are 'events', 'parser' or 'all'.")

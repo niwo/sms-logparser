@@ -124,7 +124,7 @@ module SmsLogparser
 
     def clean_up_parser_table(keep_days = 7)
       time = (Time.now - 3600 * 24 * keep_days.to_i).strftime("%Y-%m-%d %H:%M:%S")
-      client.query("DELETE FROM sms_logparser_runs WHERE run_at < '#{time}';")
+      client.query("DELETE FROM `sms_logparser_runs` WHERE `run_at` < '#{time}';")
     end
 
     private
