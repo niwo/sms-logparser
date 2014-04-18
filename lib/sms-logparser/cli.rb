@@ -2,7 +2,7 @@ module SmsLogparser
   class Cli < Thor
     require 'yaml'
 
-    STATUS = {ok: 0, api_error: 1, running: 3, interrupted: 4}
+    STATUS = {ok: 0, api_error: 1, running: 3, interrupted: 4, unknown: 5}
 
     class_option :config, 
       default: File.join(Dir.home, '.sms-logparser.yml'),
@@ -92,6 +92,7 @@ module SmsLogparser
     ensure
       begin
         if mysql && state
+          state = STATUS[:unknown] if state[:status] == STATUS[:running]
           state[:run_time] = (Time.now - state[:started_at]).round(2)
           if state[:id] && !options[:simulate]
             mysql.write_parse_result(state)
