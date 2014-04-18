@@ -55,7 +55,7 @@ module SmsLogparser
         started_at: Time.now,
         run_time: 0.0
       }
-      state = mysql.start_run(state) unless options[:simulate]
+      state[:id] = mysql.start_run(state) unless options[:simulate]
       api = Api.new(options)
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         logger.info { "Getting log messages from database..." }
@@ -93,8 +93,8 @@ module SmsLogparser
       begin
         if mysql && state
           state[:run_time] = (Time.now - state[:started_at]).round(2)
-          if state[:id]
-            mysql.write_parse_result(state) unless options[:simulate]
+          if state[:id] && !options[:simulate]
+            mysql.write_parse_result(state)
           end
           log_parse_results(state)
           SmsLogparser::Loggster.instance.close

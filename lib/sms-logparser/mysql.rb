@@ -63,8 +63,7 @@ module SmsLogparser
           #{options[:status]}\
         )"
       )
-      options[:id] = client.last_id
-      options
+      client.last_id
     end
 
     def write_parse_result(options)
@@ -117,7 +116,7 @@ module SmsLogparser
       )
       if last_parse.first
         id = last_parse.first['last_event_id']
-        client.query("DELETE FROM sms_logparser_runs WHERE id < #{id};")
+        client.query("DELETE FROM `SystemEvents` WHERE `ID` < #{id};")
       end
       true
     end
