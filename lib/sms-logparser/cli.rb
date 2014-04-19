@@ -76,9 +76,12 @@ module SmsLogparser
         end
       end
       if options[:accumulate]
+        resp_stats = {}
         api.send_sets(cache.data_sets, options[:concurrency]) do |url, response|
-          logger.info { "POST #{url} (#{response})" }
+          logger.debug { "POST #{url} (#{response})" }
+          resp_stats[response] = resp_stats[response].to_i + 1
         end
+        logger.info { "Usage commited: #{resp_stats.map {|k,v| "#{v} x status #{k}" }.join(" : ")}" }
       end
     rescue SystemExit, Interrupt
       logger.error("Received an interrupt. Stopping the parser run.")
