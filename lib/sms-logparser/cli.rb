@@ -46,6 +46,7 @@ module SmsLogparser
     def parse
       start_message = "Parser started"
       start_message += options[:simulate] ? " in simulation mode." : "."
+      logger.debug("Parser options: #{options.inspect}")
       logger.info(start_message)
       parser = Parser.new(options)
       cache = DataCache.new if options[:accumulate]
