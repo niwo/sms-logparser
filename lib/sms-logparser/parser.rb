@@ -1,10 +1,15 @@
 module SmsLogparser
   class Parser
 
-    def self.extract_data_from_msg(message)
+    def initialize(options)
+      @options = options
+      @logger = SmsLogparser::Loggster.instance
+    end
+
+    def extract_data_from_msg(message)
       data = nil
-      if self.match?(message)
-        SmsLogparser::Loggster.instance.debug { "Parser MATCH: #{message}" }
+      if Parser.match?(message)
+        @logger.debug { "Parser MATCH: #{message}" }
         match = message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s\d+\s(\d+).+"(.*)"$/
         if match
           traffic_type = Parser.get_traffic_type(match[6])
@@ -14,17 +19,31 @@ module SmsLogparser
             :author_id => match[2],
             :project_id => match[3],
             :file =>  match[4],
-            :bytes => match[5],
+            :bytes => (match[5].to_f * traffic_correction_factor(traffic_type)).round(0),
             :user_agent => match[6],
             :traffic_type => traffic_type,
             :visitor_type => visitor_type
           }
         end
       else
-        SmsLogparser::Loggster.instance.debug { "Parser IGNORE: #{message}" }
+        @logger.debug { "Parser IGNORE: #{message}" }
       end
       return data unless block_given?
       yield data
+    end
+
+    def traffic_correction_factor(traffic_type)
+      factor = case traffic_type
+      when 'TRAFFIC_WEBCAST'
+        @options[:webcast_traffic_correction] || 1.0
+      when 'TRAFFIC_MOBILE'
+        @options[:mobile_traffic_correction] || 1.0
+      when 'TRAFFIC_PODCAST'
+        @options[:podcast_traffic_correction] || 1.0
+      else
+        1.0
+      end
+      factor.to_f
     end
 
     def self.match?(message)

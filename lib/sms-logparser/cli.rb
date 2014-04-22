@@ -32,15 +32,22 @@ module SmsLogparser
     option :verbose, type: :boolean, aliases: %w(-v), desc: "Verbose output"
     option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
     option :accepted_api_responses, type: :array, aliases: %w(-r),
-      desc: "API HTTP responses which are accepted (Default: only accept 200)."
+      desc: "API HTTP responses which are accepted (Default: only accept 200)"
     option :accumulate, type: :boolean, aliases: %w(-A),
       desc: "Accumulate and cache results and send totals"
     option :concurrency, type: :numeric, default: 4, aliases: %w(-C),
       desc: "How many threads to use in parallel when sending cached results"
+    option :webcast_traffic_correction, type: :numeric, aliases: %w(-W),
+      desc: "Correction factor for webcast traffic"
+    option :mobile_traffic_correction, type: :numeric, aliases: %w(-M),
+      desc: "Correction factor for mobile traffic"
+    option :podcast_traffic_correction, type: :numeric, aliases: %w(-P),
+      desc: "Correction factor for podcast traffic"
     def parse
       start_message = "Parser started"
       start_message += options[:simulate] ? " in simulation mode." : "."
       logger.info(start_message)
+      parser = Parser.new(options)
       cache = DataCache.new if options[:accumulate]
       mysql = Mysql.new(options)
       if !options[:simulate] && mysql.parser_running?
@@ -60,7 +67,7 @@ module SmsLogparser
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         logger.info { "Getting log messages from database..." }
         entries.each do |entry| 
-          Parser.extract_data_from_msg(entry['Message']) do |data|
+          parser.extract_data_from_msg(entry['Message']) do |data|
             if data
               if options[:accumulate]
                 cache.add(data)
