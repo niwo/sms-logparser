@@ -10,6 +10,7 @@ describe SmsLogparser::LogMessage do
     log_message.status.must_equal '206'
     log_message.bytes.must_equal 7865189
     log_message.file.must_equal 'simvid_1.mp4'
+    log_message.file_extname.must_equal '.mp4'
     log_message.user_agent.must_equal 'iTunes/11.1.5 (Windows; Microsoft Windows 7 Home Premium Edition Service Pack 1 (Build 7601)) AppleWebKit/537.60.11'
   end
 

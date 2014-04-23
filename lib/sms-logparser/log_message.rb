@@ -27,6 +27,10 @@ module SmsLogparser
     def file
       match[4]
     end
+
+    def file_extname
+      File.extname(file)
+    end
     
     def user_agent
       match[7]
@@ -59,4 +63,4 @@ module SmsLogparser
       @match ||= @message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s(\d+)\s(\d+).+"(.*)"$/
     end
   end
-end
+end 

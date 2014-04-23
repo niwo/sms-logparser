@@ -16,10 +16,14 @@ module SmsLogparser
           type: "TRAFFIC_#{type}",
           value: (log_message.bytes * traffic_correction_factor(type)).round(0)
         )
-        data << log_message.account_info.merge(
-          type: "VISITOR_#{type}",
-          value: 1,
-        )
+        if log_message.status == 200 &&
+          (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ ||
+           log_message.file == 'index.m3u8')
+          data << log_message.account_info.merge(
+            type: "VISITOR_#{type}",
+            value: 1,
+          )
+        end
       else
         @logger.debug { "Parser IGNORE: #{message}" }
       end
