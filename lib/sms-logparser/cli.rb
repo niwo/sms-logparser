@@ -29,11 +29,10 @@ module SmsLogparser
     option :api_key, aliases: %w(-k), desc: "SMS API Key"
     option :simulate, type: :boolean, aliases: %w(-s),
       desc: "Dry run without submitting any data"
-    option :verbose, type: :boolean, aliases: %w(-v), desc: "Verbose output"
     option :limit, type: :numeric, aliases: %w(-L), desc: "Limit the number of entries to query"
     option :accepted_api_responses, type: :array, aliases: %w(-r),
       desc: "API HTTP responses which are accepted (Default: only accept 200)"
-    option :accumulate, type: :boolean, aliases: %w(-A),
+    option :accumulate, type: :boolean, aliases: %w(-A), default: true
       desc: "Accumulate and cache results and send totals"
     option :concurrency, type: :numeric, default: 4, aliases: %w(-C),
       desc: "How many threads to use in parallel when sending cached results"

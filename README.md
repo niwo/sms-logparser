@@ -1,6 +1,6 @@
 # SMS Logparser
 
-sms-logparser - Logparser for Simplex Media Server (SMS). Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) and sends them to the SMS API.
+sms-logparser - Logparser for Simplex Media Server (SMS). Reads access logs stored in a MySQL database (coming from the SWISS TXT CDN) accumulates and sends them to the SMS API.
 
 [![Gem Version](https://badge.fury.io/rb/sms-logparser.png)](http://badge.fury.io/rb/sms-logparser)
 
@@ -23,7 +23,7 @@ $ sms-logparser setup
 Make a test run:
 
 ```bash
-$ sms-logparser parse --simulate --verbose
+$ sms-logparser parse --simulate
 ```
 
 ## Usage
