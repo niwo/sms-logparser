@@ -7,24 +7,19 @@ module SmsLogparser
     end
 
     def extract_data_from_msg(message)
-      data = nil
+      data = []
       if Parser.match?(message)
         @logger.debug { "Parser MATCH: #{message}" }
-        match = message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s\d+\s(\d+).+"(.*)"$/
-        if match
-          traffic_type = Parser.get_traffic_type(match[6])
-          visitor_type = Parser.get_visitor_type(traffic_type, match[4])
-          data = {
-            :customer_id => match[1],
-            :author_id => match[2],
-            :project_id => match[3],
-            :file =>  match[4],
-            :bytes => (match[5].to_f * traffic_correction_factor(traffic_type)).round(0),
-            :user_agent => match[6],
-            :traffic_type => traffic_type,
-            :visitor_type => visitor_type
-          }
-        end
+        log_message = LogMessage.new(message)
+        type = Parser.get_type(log_message.user_agent)
+        data << log_message.account_info.merge(
+          type: "TRAFFIC_#{type}",
+          value: (log_message.bytes * traffic_correction_factor(type)).round(0)
+        )
+        data << log_message.account_info.merge(
+          type: "VISITOR_#{type}",
+          value: 1,
+        )
       else
         @logger.debug { "Parser IGNORE: #{message}" }
       end
@@ -32,52 +27,40 @@ module SmsLogparser
       yield data
     end
 
-    def traffic_correction_factor(traffic_type)
-      factor = case traffic_type
-      when 'TRAFFIC_WEBCAST'
-        @options[:webcast_traffic_correction] || 1.0
-      when 'TRAFFIC_MOBILE'
-        @options[:mobile_traffic_correction] || 1.0
-      when 'TRAFFIC_PODCAST'
-        @options[:podcast_traffic_correction] || 1.0
-      else
-        1.0
-      end
-      factor.to_f
-    end
-
     def self.match?(message)
       match = message.match(/\/content\/.+\/(\S+) .+ (200|206)/i)
-      # ignore detect.mp4 and index.m3u8 
+      # ignore detect.mp4 
       if match
-        return true unless match[1] =~ /detect.mp4|index.m3u8/i
+        return true unless match[1] =~ /detect.mp4/i
       end
       false
     end
 
     # see https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
     # for mobile browser detection
-    def self.get_traffic_type(user_agent)
+    def self.get_type(user_agent)
       case user_agent
       when /.*(iTunes).*/i
-        'TRAFFIC_PODCAST'
+        'PODCAST'
       when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
-        'TRAFFIC_MOBILE'
+        'MOBILE'
       else
-        'TRAFFIC_WEBCAST'
+        'WEBCAST'
       end
     end
 
-    def self.get_visitor_type(traffic_type, file)
-      return 'VISITORS_MOBILE' if File.extname(file) == '.m3u8'
-      case traffic_type
-      when 'TRAFFIC_PODCAST'
-        'VISITORS_PODCAST'
-      when 'TRAFFIC_MOBILE'
-        File.extname(file) != '.ts' ? 'VISITORS_MOBILE' : nil
+    def traffic_correction_factor(traffic_type)
+      factor = case traffic_type
+      when 'WEBCAST'
+        @options[:webcast_traffic_correction] || 1.0
+      when 'MOBILE'
+        @options[:mobile_traffic_correction] || 1.0
+      when 'PODCAST'
+        @options[:podcast_traffic_correction] || 1.0
       else
-        'VISITORS_WEBCAST'
+        1.0
       end
+      factor.to_f
     end
 
   end # class

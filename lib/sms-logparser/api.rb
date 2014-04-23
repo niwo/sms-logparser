@@ -14,25 +14,22 @@ module SmsLogparser
     end
 
     def send(data)
-      requests = build_urls(data)
-      return requests if @options[:simulate]
-
-      threads = requests.map do |request|
-        Thread.new do
-          begin
-            response = @connection.post(request[:uri])
-            request[:status] = response.status
-          rescue => e
-            raise RuntimeError, "Can't send request to #{request[:uri]}. #{e.message}", caller
-          end
-          unless @accepted_responses.include?(response.status)
-            msg = "Received HTTP status #{response.status} from API. Only accepting #{@accepted_responses.join(', ')}."
-            raise RuntimeError, msg, caller
-          end
+      path = data_to_path(data)
+      begin
+        if @options[:simulate]
+          status = 200
+        else
+          response = @connection.post(path)
+          status = response.status
         end
+      rescue => e
+        raise RuntimeError, "Can't send request to #{path}. #{e.message}", caller
       end
-      threads.each {|thread| thread.join }
-      requests
+      unless @accepted_responses.include?(status)
+        msg = "Received HTTP status #{status} from API. Only accepting #{@accepted_responses.join(', ')}."
+        raise RuntimeError, msg, caller
+      end
+      return path, status
     end
 
     def send_sets(data_sets, concurrency=4)
@@ -42,30 +39,9 @@ module SmsLogparser
       threads = concurrency.times.map do
         Thread.new do
           while !queue.empty?
-            begin
-              data = queue.pop
-              url = @base_path + [
-                data[:customer_id],
-                data[:author_id],
-                data[:project_id],
-                data[:type],
-                data[:value]
-              ].join('/')
-              if @options[:simulate]
-                status = 200
-              else
-                response = @connection.post(url)
-                status = response.status
-              end
-            rescue => e
-              raise RuntimeError, "Can't send request to #{url}. #{e.message}", caller
-            end
-            unless @accepted_responses.include?(status)
-              msg = "Received HTTP status #{status} from API. Only accepting #{@accepted_responses.join(', ')}."
-              raise RuntimeError, msg, caller
-            end
+            path, status = send(queue.pop)
             semaphore.synchronize {
-              yield url, status
+              yield path, status
             }
           end
         end
@@ -73,22 +49,14 @@ module SmsLogparser
       threads.each {|thread| thread.join }
     end
 
-    def build_urls(data)
-      requests = []
-      path = @base_path + [data[:customer_id], data[:author_id], data[:project_id]].join('/')
-      unless data[:file] =~ /.*\.m3u8$/
-        requests << {
-          url: @url, 
-          uri: [path, data[:traffic_type], data[:bytes]].join('/'),
-        }
-      end
-      if data[:visitor_type]
-        requests << {
-          url: @url,
-          uri: [path, data[:visitor_type], 1].join('/')
-        }
-      end
-      requests
+    def data_to_path(data)
+      @base_path + [
+        data[:customer_id],
+        data[:author_id],
+        data[:project_id],
+        data[:type],
+        data[:value]
+      ].join('/')
     end
 
     private

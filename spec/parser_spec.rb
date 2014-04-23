@@ -34,12 +34,10 @@ describe SmsLogparser::Parser do
     end
   end
 
-  %w(detect.mp4 index.m3u8).each do |file|
-    it "does not match excluded files" do
-      SmsLogparser::Parser.match?(
-        "GET /content/2/719/54986/#{file} HTTP/1.1\" 200 128 "
-      ).must_equal false
-    end
+  it "does not match detect.mp4 files" do
+    SmsLogparser::Parser.match?(
+      "GET /content/2/719/54986/detect.mp4 HTTP/1.1\" 200 128 "
+    ).must_equal false
   end
 
   [
@@ -51,7 +49,7 @@ describe SmsLogparser::Parser do
     "Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; en) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/19.0.1084.60 Mobile/9B206 Safari/7534.48.3"
   ].each do |mobile_agent|
     it "traffic type for mobile user agents is TRAFFIC_MOBILE (#{mobile_agent})" do
-      SmsLogparser::Parser.get_traffic_type(mobile_agent).must_equal "TRAFFIC_MOBILE"
+      SmsLogparser::Parser.get_type(mobile_agent).must_equal "MOBILE"
     end
   end
 
@@ -59,32 +57,32 @@ describe SmsLogparser::Parser do
     '127.0.0.1 - - [13/Apr/2014:05:33:23 +0200] "GET /content/51/52/42481/simvid_1.mp4 HTTP/1.1" 206 7865189 "-" "iTunes/11.1.5 (Windows; Microsoft Windows 7 Home Premium Edition Service Pack 1 (Build 7601)) AppleWebKit/537.60.11"'
   ].each do |podcast_agent|
     it "traffic type for mobile user agents is TRAFFIC_PODCAST (#{podcast_agent})" do
-      SmsLogparser::Parser.get_traffic_type(podcast_agent).must_equal "TRAFFIC_PODCAST"
+      SmsLogparser::Parser.get_type(podcast_agent).must_equal "PODCAST"
     end
   end
 
-  it "should set visitor_type to VISITORS_MOBILE for index.m3u8 files" do
-    SmsLogparser::Parser.get_visitor_type(
-      "TRAFFIC_PODCAST", "index.m3u8"
-    ).must_equal "VISITORS_MOBILE"
-  end
+  # it "should set visitor_type to VISITORS_MOBILE for index.m3u8 files" do
+  #   SmsLogparser::Parser.get_visitor_type(
+  #     "TRAFFIC_PODCAST", "index.m3u8"
+  #   ).must_equal "VISITORS_MOBILE"
+  # end
 
-  it "should NOT set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and .ts files" do
-    SmsLogparser::Parser.get_visitor_type(
-      "TRAFFIC_MOBILE", "file.ts"
-    ).must_be_nil
-  end
+  # it "should NOT set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and .ts files" do
+  #   SmsLogparser::Parser.get_visitor_type(
+  #     "TRAFFIC_MOBILE", "file.ts"
+  #   ).must_be_nil
+  # end
 
-  it "should set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and file not .ts" do
-    SmsLogparser::Parser.get_visitor_type(
-      "TRAFFIC_MOBILE", "file.mp3"
-    ).must_equal "VISITORS_MOBILE"
-  end
+  # it "should set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and file not .ts" do
+  #   SmsLogparser::Parser.get_visitor_type(
+  #     "TRAFFIC_MOBILE", "file.mp3"
+  #   ).must_equal "VISITORS_MOBILE"
+  # end
 
-  it "should set visitor_type to VISITORS_PODCAST for TRAFFIC_PODCAST" do
-    SmsLogparser::Parser.get_visitor_type(
-      "TRAFFIC_PODCAST", "file.mp4"
-    ).must_equal "VISITORS_PODCAST"
-  end
+  # it "should set visitor_type to VISITORS_PODCAST for TRAFFIC_PODCAST" do
+  #   SmsLogparser::Parser.get_visitor_type(
+  #     "TRAFFIC_PODCAST", "file.mp4"
+  #   ).must_equal "VISITORS_PODCAST"
+  # end
 
 end

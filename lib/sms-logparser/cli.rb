@@ -69,13 +69,15 @@ module SmsLogparser
         logger.info { "Getting log messages from database..." }
         entries.each do |entry| 
           parser.extract_data_from_msg(entry['Message']) do |data|
-            if data
-              if options[:accumulate]
-                cache.add(data)
-                logger.debug {"Cached data: #{data}"}
-              else
-                requests = api.send(data)
-                verbose_parser_output(entry['ID'], data, requests)
+            if data.size > 0
+              data.each do |data_entry|
+                if options[:accumulate]
+                  cache.add(data_entry)
+                  logger.debug {"Cached data: #{data_entry}"}
+                else
+                  url, status = api.send(data_entry)
+                  verbose_parser_output(entry['ID'], data_entry, url, status)
+                end
               end
               state[:last_event_id] = entry['ID']
               state[:match_count] += 1
@@ -85,9 +87,9 @@ module SmsLogparser
       end
       if options[:accumulate]
         resp_stats = {}
-        api.send_sets(cache.data_sets, options[:concurrency]) do |url, response|
-          logger.debug { "POST #{url} (#{response})" }
-          resp_stats[response] = resp_stats[response].to_i + 1
+        api.send_sets(cache.data_sets, options[:concurrency]) do |url, status|
+          logger.debug { "POST #{url} (#{status})" }
+          resp_stats[status] = resp_stats[status].to_i + 1
         end
         logger.info { "Usage commited: #{resp_stats.map {|k,v| "#{v} x status #{k}" }.join(" : ")}" }
       end
@@ -195,15 +197,11 @@ module SmsLogparser
         SmsLogparser::Loggster.instance.set_log_device options[:logfile]
       end
 
-      def verbose_parser_output(entry_id, data, requests)
+      def verbose_parser_output(entry_id, data, url, status)
         logger.debug {
-          "parsing data for #{entry_id} (#{data.map{|k,v| "#{k}=\"#{v || '-'}\""}.join(" ") || ''})"
+          "Parsing data for #{entry_id} (#{data.map{|k,v| "#{k}=\"#{v || '-'}\""}.join(" ") || ''})"
         }
-        requests.each_with_index do |req, i|
-          logger.debug {
-            "URL #{i + 1} for entry #{entry_id} #{req[:url]}#{req[:uri]}"
-          }
-        end
+        logger.debug {"URL for entry #{entry_id}: #{url} (#{status})"}
       end
 
       def table_to_csv(table)
