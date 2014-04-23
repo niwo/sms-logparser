@@ -16,16 +16,20 @@ module SmsLogparser
       match[3]
     end
 
-    def status
-      match[5].to_i
+    def file
+      match[4]
     end
 
-    def bytes
+    def args
+      match[5]
+    end
+
+    def status
       match[6].to_i
     end
 
-    def file
-      match[4]
+    def bytes
+      match[7].to_i
     end
 
     def file_extname
@@ -33,7 +37,7 @@ module SmsLogparser
     end
     
     def user_agent
-      match[7]
+      match[8]
     end
 
     def account_info
@@ -61,7 +65,7 @@ module SmsLogparser
     private 
 
     def match
-      @match ||= @message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)\s.*\"\s(\d+)\s(\d+).+"(.*)"$/
+      @match ||= @message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)(\?\S*)*\s.*\"\s(\d+)\s(\d+).+"(.*)"$/
     end
   end
 end 

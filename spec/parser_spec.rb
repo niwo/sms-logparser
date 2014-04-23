@@ -101,6 +101,16 @@ describe SmsLogparser::Parser do
     data[1][:value].must_equal 1
   end
 
+  it "count traffic with status 206 and a argumenst string and user agent Firefox on Windows as webcast visit" do
+    message = '- - [23/Apr/2014:17:36:33 +0200] "GET /content/51/52/42721/simvid_1_40.flv?position=22 HTTP/1.1" 206 100708 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; rv:28.0) Gecko/20100101 Firefox/28.0"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data.first[:customer_id].must_equal "51"
+    data.first[:author_id].must_equal "52"
+    data.first[:project_id].must_equal "42721"
+    data.first[:type].must_equal 'TRAFFIC_WEBCAST'
+    data.first[:value].must_equal 100708
+  end
+
   it "do not count *.css with status 200 as visit" do
     message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/application.css HTTP/1.1" 200 192 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
     data = SmsLogparser::Parser.new.extract_data_from_msg(message)
