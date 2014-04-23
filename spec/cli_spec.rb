@@ -6,9 +6,6 @@ describe SmsLogparser::Cli do
   before do
     TestHelper.create_test_db
     TestHelper.create_sylog_db_table
-    stub_request(:post, /.*locahost.*/).
-      with(headers: {'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
-      to_return(status: 200, body: "stubbed response", headers: {})
   end
 
   after do
