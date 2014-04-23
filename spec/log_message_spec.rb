@@ -7,7 +7,7 @@ describe SmsLogparser::LogMessage do
     log_message.customer_id.must_equal '51'
     log_message.author_id.must_equal '102'
     log_message.project_id.must_equal '42481'
-    log_message.status.must_equal '206'
+    log_message.status.must_equal 206
     log_message.bytes.must_equal 7865189
     log_message.file.must_equal 'simvid_1.mp4'
     log_message.file_extname.must_equal '.mp4'

@@ -34,7 +34,7 @@ describe SmsLogparser::Parser do
     end
   end
 
-  it "does not match detect.mp4 files" do
+  it "does not match for 'detect.mp4' files" do
     SmsLogparser::Parser.match?(
       "GET /content/2/719/54986/detect.mp4 HTTP/1.1\" 200 128 "
     ).must_equal false
@@ -61,28 +61,56 @@ describe SmsLogparser::Parser do
     end
   end
 
-  # it "should set visitor_type to VISITORS_MOBILE for index.m3u8 files" do
-  #   SmsLogparser::Parser.get_visitor_type(
-  #     "TRAFFIC_PODCAST", "index.m3u8"
-  #   ).must_equal "VISITORS_MOBILE"
-  # end
+  it "count index.m3u8 with status 200 and user agent iPhone as mobile visit" do
+    message = '- - [22/Apr/2014:17:44:17 +0200] "GET /content/51/52/42701/index.m3u8 HTTP/1.1" 200 319 "-" "AppleCoreMedia/1.0.0.11D167 (iPhone; U; CPU OS 7_1 like Mac OS X; de_de)"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data[1][:customer_id].must_equal "51"
+    data[1][:author_id].must_equal "52"
+    data[1][:project_id].must_equal "42701"
+    data[1][:type].must_equal 'VISITORS_MOBILE'
+    data[1][:value].must_equal 1
+  end
 
-  # it "should NOT set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and .ts files" do
-  #   SmsLogparser::Parser.get_visitor_type(
-  #     "TRAFFIC_MOBILE", "file.ts"
-  #   ).must_be_nil
-  # end
+  it "count *.flv with status 200 and user agent Android as mobile visit" do
+    message = ' - - [22/Apr/2014:17:44:27 +0200] "GET /content/51/52/42709/simvid_1_40.flv HTTP/1.1" 200 96259 "http://blick.simplex.tv/NubesPlayer/index.html?cID=51&aID=52&pID=42709&autostart=false&themeColor=d6081c&embed=1&configUrl=http://f.blick.ch/resources/61786/ver1-0/js/xtendxIframeStatsSmartphone.js?adtechID=3522740&language=de&quality=40&hideHD=true&progressiveDownload=true" "Mozilla/5.0 (Linux; Android 4.4.2; C6903 Build/14.3.A.0.757) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.114 Mobile Safari/537.36"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data[1][:customer_id].must_equal "51"
+    data[1][:author_id].must_equal "52"
+    data[1][:project_id].must_equal "42709"
+    data[1][:type].must_equal 'VISITORS_MOBILE'
+    data[1][:value].must_equal 1
+  end
 
-  # it "should set visitor_type to VISITORS_MOBILE for TRAFFIC_MOBILE and file not .ts" do
-  #   SmsLogparser::Parser.get_visitor_type(
-  #     "TRAFFIC_MOBILE", "file.mp3"
-  #   ).must_equal "VISITORS_MOBILE"
-  # end
+  it "count *.mp4 with status 200 and user agent Android as mobile visit" do
+    message = '- - [22/Apr/2014:17:44:21 +0200] "GET /content/51/52/42701/simvid_1.mp4 HTTP/1.1" 200 2644715 "-" "Samsung GT-I9505 stagefright/1.2 (Linux;Android 4.4.2)"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data[1][:customer_id].must_equal "51"
+    data[1][:author_id].must_equal "52"
+    data[1][:project_id].must_equal "42701"
+    data[1][:type].must_equal 'VISITORS_MOBILE'
+    data[1][:value].must_equal 1
+  end
 
-  # it "should set visitor_type to VISITORS_PODCAST for TRAFFIC_PODCAST" do
-  #   SmsLogparser::Parser.get_visitor_type(
-  #     "TRAFFIC_PODCAST", "file.mp4"
-  #   ).must_equal "VISITORS_PODCAST"
-  # end
+  it "count *.flv with status 200 and user agent Firefox on Windows as webcast visit" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 200 6742274 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data[1][:customer_id].must_equal "51"
+    data[1][:author_id].must_equal "52"
+    data[1][:project_id].must_equal "42431"
+    data[1][:type].must_equal 'VISITORS_WEBCAST'
+    data[1][:value].must_equal 1
+  end
+
+  it "do not count *.css with status 200 as visit" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/application.css HTTP/1.1" 200 192 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data.size.must_equal 1
+  end
+
+  it "do not count status 206 as visit" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 206 19289 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data.size.must_equal 1
+  end
 
 end

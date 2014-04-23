@@ -17,7 +17,7 @@ module SmsLogparser
     end
 
     def status
-      match[5]
+      match[5].to_i
     end
 
     def bytes
@@ -49,6 +49,7 @@ module SmsLogparser
         status: status,
         bytes: bytes,
         file: file,
+        file_extname: file_extname,
         user_agent: user_agent
       }
     end

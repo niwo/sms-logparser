@@ -1,7 +1,7 @@
 module SmsLogparser
   class Parser
 
-    def initialize(options)
+    def initialize(options = {})
       @options = options
       @logger = SmsLogparser::Loggster.instance
     end
@@ -20,7 +20,7 @@ module SmsLogparser
           (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ ||
            log_message.file == 'index.m3u8')
           data << log_message.account_info.merge(
-            type: "VISITOR_#{type}",
+            type: "VISITORS_#{type}",
             value: 1,
           )
         end

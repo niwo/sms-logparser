@@ -11,11 +11,11 @@ describe SmsLogparser::Api do
 
   it "builds the correct path for TRAFFIC data" do
     data = {
-      :customer_id => 1,
-      :author_id => 2,
-      :project_id => 3,
-      :value => 128,
-      :type => 'TRAFFIC_WEBCAST',
+      customer_id: 1,
+      author_id: 2,
+      project_id: 3,
+      value: 128,
+      type: 'TRAFFIC_WEBCAST',
     }
     @api.data_to_path(data).must_match /\/1\/2\/3\/TRAFFIC_WEBCAST\/128$/
   end
