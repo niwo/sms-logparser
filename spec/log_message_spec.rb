@@ -23,9 +23,22 @@ describe SmsLogparser::LogMessage do
     log_message.status.must_equal 206
     log_message.bytes.must_equal 100708
     log_message.file.must_equal 'simvid_1_40.flv'
-    log_message.args.must_equal '?position=22'
+    log_message.args.must_equal 'position=22'
     log_message.file_extname.must_equal '.flv'
     log_message.user_agent.must_equal 'Mozilla/5.0 (Windows NT 6.1; rv:28.0) Gecko/20100101 Firefox/28.0'
+  end
+
+  it "can extract the correct values from messages without files" do
+    log_message = SmsLogparser::LogMessage.new('- - [23/Apr/2014:17:47:32 +0200] "GET /content/51/52/42624/ HTTP/1.1" 200 1181 "-" "Googlebot-Video/1.0"')
+    log_message.customer_id.must_equal '51'
+    log_message.author_id.must_equal '52'
+    log_message.project_id.must_equal '42624'
+    log_message.status.must_equal 200
+    log_message.bytes.must_equal 1181
+    log_message.file.must_equal nil
+    log_message.args.must_equal nil
+    log_message.file_extname.must_equal nil
+    log_message.user_agent.must_equal 'Googlebot-Video/1.0'
   end
 
 end

@@ -111,6 +111,17 @@ describe SmsLogparser::Parser do
     data.first[:value].must_equal 100708
   end
 
+  it "count traffic with status 200 and no file from bot as webcast visit" do
+    message = '- - [23/Apr/2014:17:47:32 +0200] "GET /content/51/52/42624/ HTTP/1.1" 200 1181 "-" "Googlebot-Video/1.0"'
+    data = SmsLogparser::Parser.new.extract_data_from_msg(message)
+    data.size.must_equal 1
+    data.first[:customer_id].must_equal "51"
+    data.first[:author_id].must_equal "52"
+    data.first[:project_id].must_equal "42624"
+    data.first[:type].must_equal 'TRAFFIC_WEBCAST'
+    data.first[:value].must_equal 1181
+  end
+
   it "do not count *.css with status 200 as visit" do
     message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/application.css HTTP/1.1" 200 192 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
     data = SmsLogparser::Parser.new.extract_data_from_msg(message)
