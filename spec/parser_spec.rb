@@ -64,13 +64,43 @@ describe SmsLogparser::Parser do
   end
 
   it "do not count *.css with status 200 as visit" do
-    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/application.css HTTP/1.1" 200 192 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/application.css HTTP/1.1" 200 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
     data = SmsLogparser::Parser.extract_data_from_msg(message)
     data.size.must_equal 1
   end
 
   it "do not count status 206 as visit" do
-    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 206 19289 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 206 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.extract_data_from_msg(message)
+    data.size.must_equal 1
+  end
+
+  it "count visit with no args" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 200 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.extract_data_from_msg(message)
+    data.size.must_equal 2
+  end
+
+  it "count visit with position=1" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv?position=0 HTTP/1.1" 200 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.extract_data_from_msg(message)
+    data.size.must_equal 2
+  end
+
+  it "count visit with position=1" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv?position=1 HTTP/1.1" 200 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.extract_data_from_msg(message)
+    data.size.must_equal 2
+  end
+
+  it "do not count visit with args position=2 or greater" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv?position=2 HTTP/1.1" 200 19299999 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
+    data = SmsLogparser::Parser.extract_data_from_msg(message)
+    data.size.must_equal 1
+  end
+
+  it "do not count visit when bytes < 256 * 1024" do
+    message = '- - [22/Apr/2014:18:00:50 +0200] "GET /content/51/52/42431/simvid_1_40.flv HTTP/1.1" 200 200000 "http://blick.simplex.tv/NubesPlayer/player.swf" "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"'
     data = SmsLogparser::Parser.extract_data_from_msg(message)
     data.size.must_equal 1
   end
