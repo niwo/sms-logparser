@@ -40,9 +40,9 @@ module SmsLogparser
           type: "VISITORS_#{log_message.type}",
           value: 1
         )
-        logger.debug { "Counting visit for message: #{log_message.message}" }
+        logger.debug { "Counting visit: message=#{log_message.message} data=#{visit_data}" }
       else
-        logger.debug { "Not counting visit for message: #{log_message.message}" }
+        logger.debug { "NOT counting VISITORS_#{log_message.type} for: #{log_message.message}" }
       end
       visit_data || nil
     end
