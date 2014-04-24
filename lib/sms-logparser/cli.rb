@@ -36,18 +36,11 @@ module SmsLogparser
       desc: "Accumulate and cache results and send totals"
     option :concurrency, type: :numeric, default: 4, aliases: %w(-C),
       desc: "How many threads to use in parallel when sending cached results"
-    option :webcast_traffic_correction, type: :numeric, aliases: %w(-W),
-      desc: "Correction factor for webcast traffic"
-    option :mobile_traffic_correction, type: :numeric, aliases: %w(-M),
-      desc: "Correction factor for mobile traffic"
-    option :podcast_traffic_correction, type: :numeric, aliases: %w(-P),
-      desc: "Correction factor for podcast traffic"
     def parse
       start_message = "Parser started"
       start_message += options[:simulate] ? " in simulation mode." : "."
       logger.debug("Parser options: #{options.inspect}")
       logger.info(start_message)
-      parser = Parser.new(options)
       cache = DataCache.new if options[:accumulate]
       mysql = Mysql.new(options)
       if !options[:simulate] && mysql.parser_running?
@@ -67,7 +60,7 @@ module SmsLogparser
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         logger.info { "Getting log messages from database..." }
         entries.each do |entry| 
-          parser.extract_data_from_msg(entry['Message']) do |data|
+          Parser.extract_data_from_msg(entry['Message']) do |data|
             if data.size > 0
               data.each do |data_entry|
                 if options[:accumulate]

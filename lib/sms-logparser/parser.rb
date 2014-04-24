@@ -1,74 +1,50 @@
 module SmsLogparser
-  class Parser
+  module Parser
 
-    def initialize(options = {})
-      @options = options
-      @logger = SmsLogparser::Loggster.instance
+    module_function
+
+    def logger
+      SmsLogparser::Loggster.instance
     end
 
     def extract_data_from_msg(message)
       data = []
-      if Parser.match?(message)
-        @logger.debug { "Parser MATCH: #{message}" }
+      if LogMessage.match?(message)
+        logger.debug { "Parser MATCH: #{message}" }
         log_message = LogMessage.new(message)
-        unless log_message.match
-          @logger.warn { "Can't extract data from message: #{message}" }
+        if log_message.match
+          data << Parser.extract_usage_data(log_message)
+          data << Parser.extract_visit(log_message)
+          data.compact! # remove nil values
         else
-          type = Parser.get_type(log_message.user_agent)
-          data << log_message.account_info.merge(
-            type: "TRAFFIC_#{type}",
-            value: (log_message.bytes * traffic_correction_factor(type)).round(0)
-          )
-          if log_message.status == 200 &&
-            (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ ||
-             log_message.file == 'index.m3u8')
-            data << log_message.account_info.merge(
-              type: "VISITORS_#{type}",
-              value: 1,
-            )
-          end
+          logger.warn { "Can't extract data from message: #{message}" }
         end
       else
-        @logger.debug { "Parser IGNORE: #{message}" }
+        logger.debug { "Parser IGNORE: #{message}" }
       end
-      return data unless block_given?
-      yield data
+      yield data if block_given?
+      data
     end
 
-    def self.match?(message)
-      match = message.match(/\/content\/\d+\/\d+\/\d+\/(\S*).+(200|206)/)
-      # ignore detect.mp4 
-      if match
-        return true unless match[1] =~ /detect.mp4/i
-      end
-      false
+    def extract_usage_data(log_message)
+      log_message.account_info.merge(
+        type: "TRAFFIC_#{log_message.type}",
+        value: log_message.bytes
+      )
     end
 
-    # see https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
-    # for mobile browser detection
-    def self.get_type(user_agent)
-      case user_agent
-      when /.*(iTunes).*/i
-        'PODCAST'
-      when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
-        'MOBILE'
+    def extract_visit(log_message)
+      if log_message.status == 200 &&
+        (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ || log_message.file == 'index.m3u8')
+        visit_data = log_message.account_info.merge(
+          type: "VISITORS_#{log_message.type}",
+          value: 1
+        )
+        logger.debug { "Counting visit for message: #{log_message.message}" }
       else
-        'WEBCAST'
+        logger.debug { "Not counting visit for message: #{log_message.message}" }
       end
-    end
-
-    def traffic_correction_factor(traffic_type)
-      factor = case traffic_type
-      when 'WEBCAST'
-        @options[:webcast_traffic_correction] || 1.0
-      when 'MOBILE'
-        @options[:mobile_traffic_correction] || 1.0
-      when 'PODCAST'
-        @options[:podcast_traffic_correction] || 1.0
-      else
-        1.0
-      end
-      factor.to_f
+      visit_data || nil
     end
 
   end # class

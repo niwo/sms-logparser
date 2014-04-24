@@ -1,7 +1,36 @@
 module SmsLogparser
   class LogMessage
+
+    attr_reader :message
+    
     def initialize(message)
-      @message = message
+      # reove double slashes from message
+      @message = message.squeeze('/')
+    end
+
+    def self.match?(message)
+      if match = message.match(/\/content\/\d+\/\d+\/\d+\/(\S*).+(200|206)/)
+        # ignore detect.mp4 
+        return true unless match[1] =~ /detect.mp4/i
+      end
+      false
+    end
+
+    # see https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
+    # for mobile browser detection
+    def self.get_type(user_agent)
+      case user_agent
+      when /.*(iTunes).*/i
+        'PODCAST'
+      when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
+        'MOBILE'
+      else
+        'WEBCAST'
+      end
+    end
+
+    def type
+      LogMessage.get_type(user_agent)
     end
 
     def match
