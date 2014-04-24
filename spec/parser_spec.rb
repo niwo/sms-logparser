@@ -3,7 +3,7 @@ require 'spec_helper'
 describe SmsLogparser::Parser do
 
   it "count index.m3u8 with status 200 and user agent iPhone as mobile visit" do
-    message = '- - [22/Apr/2014:17:44:17 +0200] "GET /content/51/52/42701/index.m3u8 HTTP/1.1" 200 319 "-" "AppleCoreMedia/1.0.0.11D167 (iPhone; U; CPU OS 7_1 like Mac OS X; de_de)"'
+    message = '- - [22/Apr/2014:17:44:17 +0200] "GET /content/51/52/42701/index.m3u8 HTTP/1.1" 200 319009 "-" "AppleCoreMedia/1.0.0.11D167 (iPhone; U; CPU OS 7_1 like Mac OS X; de_de)"'
     data = SmsLogparser::Parser.extract_data_from_msg(message)
     data[1][:customer_id].must_equal "51"
     data[1][:author_id].must_equal "52"
@@ -13,7 +13,7 @@ describe SmsLogparser::Parser do
   end
 
   it "count *.flv with status 200 and user agent Android as mobile visit" do
-    message = ' - - [22/Apr/2014:17:44:27 +0200] "GET /content/51/52/42709/simvid_1_40.flv HTTP/1.1" 200 96259 "http://blick.simplex.tv/NubesPlayer/index.html?cID=51&aID=52&pID=42709&autostart=false&themeColor=d6081c&embed=1&configUrl=http://f.blick.ch/resources/61786/ver1-0/js/xtendxIframeStatsSmartphone.js?adtechID=3522740&language=de&quality=40&hideHD=true&progressiveDownload=true" "Mozilla/5.0 (Linux; Android 4.4.2; C6903 Build/14.3.A.0.757) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.114 Mobile Safari/537.36"'
+    message = ' - - [22/Apr/2014:17:44:27 +0200] "GET /content/51/52/42709/simvid_1_40.flv HTTP/1.1" 200 9625900 "http://blick.simplex.tv/NubesPlayer/index.html?cID=51&aID=52&pID=42709&autostart=false&themeColor=d6081c&embed=1&configUrl=http://f.blick.ch/resources/61786/ver1-0/js/xtendxIframeStatsSmartphone.js?adtechID=3522740&language=de&quality=40&hideHD=true&progressiveDownload=true" "Mozilla/5.0 (Linux; Android 4.4.2; C6903 Build/14.3.A.0.757) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.114 Mobile Safari/537.36"'
     data = SmsLogparser::Parser.extract_data_from_msg(message)
     data[1][:customer_id].must_equal "51"
     data[1][:author_id].must_equal "52"

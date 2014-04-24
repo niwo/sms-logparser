@@ -3,10 +3,10 @@ module SmsLogparser
 
     def initialize(options)
       @options = options
-      @query_limit = options[:query_limit] || 5000
       @client = client
-      @logger = SmsLogparser::Loggster.instance
       @max_retries = 5
+      @query_limit = options[:query_limit] || 5000
+      @logger = SmsLogparser::Loggster.instance
     end
 
     def client
@@ -20,7 +20,7 @@ module SmsLogparser
 
     def last_runs(results = 10)
       runs = client.query(
-        "SELECT * FROM sms_logparser_runs ORDER BY id DESC LIMIT #{results || 10}"
+        "SELECT * FROM sms_logparser_runs ORDER BY id DESC LIMIT #{results.to_i || 15}"
       )
     end
 
