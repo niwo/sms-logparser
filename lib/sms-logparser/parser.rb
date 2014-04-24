@@ -11,18 +11,22 @@ module SmsLogparser
       if Parser.match?(message)
         @logger.debug { "Parser MATCH: #{message}" }
         log_message = LogMessage.new(message)
-        type = Parser.get_type(log_message.user_agent)
-        data << log_message.account_info.merge(
-          type: "TRAFFIC_#{type}",
-          value: (log_message.bytes * traffic_correction_factor(type)).round(0)
-        )
-        if log_message.status == 200 &&
-          (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ ||
-           log_message.file == 'index.m3u8')
+        unless log_message.match
+          @logger.warn { "Can't extract data from message: #{message}" }
+        else
+          type = Parser.get_type(log_message.user_agent)
           data << log_message.account_info.merge(
-            type: "VISITORS_#{type}",
-            value: 1,
+            type: "TRAFFIC_#{type}",
+            value: (log_message.bytes * traffic_correction_factor(type)).round(0)
           )
+          if log_message.status == 200 &&
+            (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ ||
+             log_message.file == 'index.m3u8')
+            data << log_message.account_info.merge(
+              type: "VISITORS_#{type}",
+              value: 1,
+            )
+          end
         end
       else
         @logger.debug { "Parser IGNORE: #{message}" }

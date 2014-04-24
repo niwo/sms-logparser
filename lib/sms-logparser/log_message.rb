@@ -4,32 +4,36 @@ module SmsLogparser
       @message = message
     end
 
+    def match
+      @match ||= @message.match /\/content\/(\d+)\/(\d+)\/+(\d+)\/(\w+\.\w+)*(\?\S*)*\s.*\"\s(\d+)\s(\d+).+"(.*)"$/
+    end
+
     def customer_id
-      match[1]
+      match[1] if match
     end
 
     def author_id
-      match[2]
+      match[2] if match
     end
               
     def project_id
-      match[3]
+      match[3] if match
     end
 
     def file
-      match[4]
+      match[4] if match
     end
 
     def args
-      match[5][1..-1] if match[5]
+      match[5][1..-1] if match && match[5]
     end
 
     def status
-      match[6].to_i
+      match[6].to_i if match
     end
 
     def bytes
-      match[7].to_i
+      match[7].to_i if match
     end
 
     def file_extname
@@ -37,7 +41,7 @@ module SmsLogparser
     end
     
     def user_agent
-      match[8]
+      match[8] if match
     end
 
     def account_info
@@ -60,12 +64,6 @@ module SmsLogparser
 
     def to_h
       account_info.merge(transfer_info)
-    end
-
-    private 
-
-    def match
-      @match ||= @message.match /\/content\/(\d+)\/(\d+)\/(\d+)\/(\w+\.\w+)*(\?\S*)*\s.*\"\s(\d+)\s(\d+).+"(.*)"$/
     end
   end
 end 

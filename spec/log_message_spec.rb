@@ -41,4 +41,23 @@ describe SmsLogparser::LogMessage do
     log_message.user_agent.must_equal 'Googlebot-Video/1.0'
   end
 
+  it "does not fail on double slashes" do
+    log_message = SmsLogparser::LogMessage.new('- - [23/Apr/2014:23:01:24 +0200] "GET /content/244/245/42601//player_logo.jpg?0.19035581778734922 HTTP/1.1" 200 21671 "http://blick.simplex.tv/content/244/245/42601/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36"')
+    log_message.customer_id.must_equal nil
+    log_message.author_id.must_equal nil
+    log_message.project_id.must_equal nil
+    log_message.status.must_equal nil
+    log_message.bytes.must_equal nil
+    log_message.file.must_equal nil
+    log_message.args.must_equal nil
+    log_message.file_extname.must_equal nil
+    log_message.user_agent.must_equal nil
+    #log_message.status.must_equal 200
+    #log_message.bytes.must_equal 1181
+    #log_message.file.must_equal 'player_logo.jpg'
+    #log_message.args.must_equal '0.19035581778734922'
+    #log_message.file_extname.must_equal 'jpg'
+    #log_message.user_agent.must_equal 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36'
+  end
+
 end
