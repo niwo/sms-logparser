@@ -36,7 +36,9 @@ module SmsLogparser
     def extract_visit(log_message)
       # only measure file bigger than 256K
       size_limit = 256 * 1024
-      if log_message.status == 200 && log_message.bytes > size_limit &&
+      if log_message.status == 200 &&
+        log_message.bytes > size_limit &&
+        (!log_message.args || log_message.args.match(/position=(0|1)/)) &&
         (log_message.file_extname =~ /\.(mp3|mp4|flv|f4v)/ || log_message.file == 'index.m3u8')
         visit_data = log_message.account_info.merge(
           type: "VISITORS_#{log_message.type}",
