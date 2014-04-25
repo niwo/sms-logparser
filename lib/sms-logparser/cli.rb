@@ -36,11 +36,18 @@ module SmsLogparser
       desc: "Accumulate and cache results and send totals"
     option :concurrency, type: :numeric, default: 4, aliases: %w(-C),
       desc: "How many threads to use in parallel when sending cached results"
+    option :webcast_traffic_correction, type: :numeric, aliases: %w(-W),
+      desc: "Correction factor for webcast traffic"
+    option :mobile_traffic_correction, type: :numeric, aliases: %w(-M),
+      desc: "Correction factor for mobile traffic"
+    option :podcast_traffic_correction, type: :numeric, aliases: %w(-P),
+      desc: "Correction factor for podcast traffic"
     def parse
       start_message = "Parser started"
       start_message += options[:simulate] ? " in simulation mode." : "."
       logger.debug("Parser options: #{options.inspect}")
       logger.info(start_message)
+      parser = Parser.new(options)
       cache = DataCache.new if options[:accumulate]
       mysql = Mysql.new(options)
       if !options[:simulate] && mysql.parser_running?
@@ -60,7 +67,7 @@ module SmsLogparser
       mysql.get_entries(last_id: state[:last_event_id], limit: options[:limit]) do |entries|
         logger.info { "Getting log messages from database..." }
         entries.each do |entry| 
-          Parser.extract_data_from_msg(entry['Message']) do |data|
+          parser.extract_data_from_msg(entry['Message']) do |data|
             if data.size > 0
               data.each do |data_entry|
                 if options[:accumulate]
@@ -187,6 +194,18 @@ module SmsLogparser
       def logger
         SmsLogparser::Loggster.instance.set_severity options[:severity]
         SmsLogparser::Loggster.instance.set_log_device options[:logfile]
+      end
+
+      def set_parser_options
+        if options[:webcast_traffic_correction]
+          SmsLogparser::Parser.webcast_traffic_correction = options[:webcast_traffic_correction]
+        end
+        if options[:podcast_traffic_correction]
+          SmsLogparser::Parser.podcast_traffic_correction = options[:podcast_traffic_correction]
+        end
+        if options[:mobile_traffic_correction]
+          SmsLogparser::Parser.mobile_traffic_correction = options[:mobile_traffic_correction]
+        end
       end
 
       def verbose_parser_output(entry_id, data, url, status)

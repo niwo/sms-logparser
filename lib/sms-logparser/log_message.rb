@@ -2,27 +2,36 @@ module SmsLogparser
   class LogMessage
 
     attr_reader :message
-    
-    def initialize(message)
-      # reove double slashes from message
+
+    MOBILE_AGENT  = '.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*'
+    PODCAST_AGENT = '.*(iTunes).*'
+    FILE_EXCLUDE  = 'detect.mp4'
+    STATUS_MATCH  = '200|206'
+
+    def initialize(message, options = {})
+      # remove double slashes from message
       @message = message.squeeze('/')
+      @mobile_agent = options[:mobile_agent_regex] || MOBILE_AGENT
+      @podcast_agent = options[:podcast_agent_regex] || PODCAST_AGENT
+      @file_exclude = options[:file_exclude_regex] || FILE_EXCLUDE
+      @status_match = options[:status_match_regex] || STATUS_MATCH
     end
 
-    def self.match?(message)
-      if match = message.match(/\/content\/\d+\/\d+\/\d+\/(\S*).+(200|206)/)
+    def match?
+      if match = @message.match(/\/content\/\d+\/\d+\/\d+\/(\S*).+(#{@status_match})/)
         # ignore detect.mp4 
-        return true unless match[1] =~ /detect.mp4/i
+        return true unless match[1] =~ /#{@file_exclude}/i
       end
       false
     end
 
     # see https://developer.mozilla.org/en-US/docs/Browser_detection_using_the_user_agent
     # for mobile browser detection
-    def self.get_type(user_agent)
+    def self.get_type(user_agent, mobile_agent = MOBILE_AGENT, podcast_agent = PODCAST_AGENT)
       case user_agent
-      when /.*(iTunes).*/i
+      when /#{podcast_agent}/i
         'PODCAST'
-      when /.*(Mobi|IEMobile|Mobile Safari|iPhone|iPod|iPad|Android|BlackBerry|Opera Mini).*/
+      when /#{mobile_agent}/i
         'MOBILE'
       else
         'WEBCAST'
@@ -30,7 +39,7 @@ module SmsLogparser
     end
 
     def type
-      LogMessage.get_type(user_agent)
+      LogMessage.get_type(user_agent, @mobile_agent, @podcast_agent)
     end
 
     def match

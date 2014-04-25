@@ -1,7 +1,9 @@
 module SmsLogparser
-  module Parser
+  class Parser
 
-    module_function
+    def initialize(options = {})
+      @options = options
+    end
 
     def logger
       SmsLogparser::Loggster.instance
@@ -9,12 +11,12 @@ module SmsLogparser
 
     def extract_data_from_msg(message)
       data = []
-      if LogMessage.match?(message)
+      log_message = LogMessage.new(message, @options)
+      if log_message.match?
         logger.debug { "Parser MATCH: #{message}" }
-        log_message = LogMessage.new(message)
         if log_message.match
-          data << Parser.extract_usage_data(log_message)
-          data << Parser.extract_visit(log_message)
+          data << extract_usage_data(log_message)
+          data << extract_visit(log_message)
           data.compact! # remove nil values
         else
           logger.warn { "Can't extract data from message: #{message}" }
@@ -27,9 +29,10 @@ module SmsLogparser
     end
 
     def extract_usage_data(log_message)
+      traffic = log_message.bytes * traffic_correction_factor(log_message.type)
       log_message.account_info.merge(
         type: "TRAFFIC_#{log_message.type}",
-        value: log_message.bytes
+        value: traffic.round(0)
       )
     end
 
@@ -49,6 +52,20 @@ module SmsLogparser
         logger.debug { "NOT counting VISITORS_#{log_message.type} for: #{log_message.message}" }
       end
       visit_data || nil
+    end
+
+    def traffic_correction_factor(traffic_type)
+      factor = case traffic_type
+      when 'WEBCAST'
+        @options[:webcast_traffic_correction] || 1.0
+      when 'MOBILE'
+        @options[:mobile_traffic_correction] || 1.0
+      when 'PODCAST'
+        @options[:podcast_traffic_correction] || 1.0
+      else
+        1.0
+      end
+      factor.to_f
     end
 
   end # class
